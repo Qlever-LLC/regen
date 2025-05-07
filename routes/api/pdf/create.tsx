@@ -1,0 +1,30 @@
+import { FreshContext, Handlers } from "$fresh/server.ts";
+
+// Import Astral
+import { launch } from "@astral/astral";
+
+export const handler: Handlers = {
+	async GET(_req: Request, ctx: FreshContext) {
+		return await ctx.render();
+	},
+	async POST(req: Request, ctx: FreshContext) {
+		const data = await req.formData();
+		const browser = await launch();
+		// TODO: Actually make PDF template page
+		const page = await browser.newPage(ctx.url + `template?data=${data}`);
+		const pdf = await page.pdf();
+		// TODO: Sign the PDF
+		return new Response(pdf, { status: 201 });
+	},
+};
+
+export default function Create() {
+	return (
+		<>
+			<form method="post">
+				<input type="text" name="test" value="" />
+				<button type="submit">Create</button>
+			</form>
+		</>
+	);
+}
