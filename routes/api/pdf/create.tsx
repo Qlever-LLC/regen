@@ -1,7 +1,8 @@
 import { FreshContext, Handlers } from "$fresh/server.ts";
 
-// Import Astral
-import { launch } from "@astral/astral";
+import { connect, launch } from "@astral/astral";
+
+const BROWSER = Deno.env.get("BROWSER_ENDPOINT");
 
 export const handler: Handlers = {
 	async GET(_req: Request, ctx: FreshContext) {
@@ -9,12 +10,20 @@ export const handler: Handlers = {
 	},
 	async POST(req: Request, ctx: FreshContext) {
 		const data = await req.formData();
-		const browser = await launch();
-		// TODO: Actually make PDF template page
-		const page = await browser.newPage(ctx.url + `template?data=${data}`);
-		const pdf = await page.pdf();
-		// TODO: Sign the PDF
-		return new Response(pdf, { status: 201 });
+		const browser = await (BROWSER
+			? connect({ wsEndpoint: BROWSER })
+			: launch());
+		try {
+			// TODO: Actually make PDF template page
+			const page = await browser.newPage(ctx.url + `template?data=${data}`);
+			const pdf = await page.pdf();
+			// TODO: Sign the PDF
+			return new Response(pdf, { status: 201 });
+		} finally {
+			if (!BROWSER) {
+				await browser.close();
+			}
+		}
 	},
 };
 
