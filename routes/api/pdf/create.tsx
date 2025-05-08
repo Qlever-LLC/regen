@@ -12,7 +12,10 @@ export const handler: Handlers = {
 		const data = await req.formData();
 		const browser = await (BROWSER
 			? connect({ wsEndpoint: BROWSER })
-			: launch({ path: "node_modules/.bin/chrome" }));
+			: launch({
+					path: "node_modules/.bin/chrome",
+					args: ["--user-data-dir=/tmp"],
+				}));
 		try {
 			// TODO: Actually make PDF template page
 			const page = await browser.newPage(`https://www.google.com?q=${data}`);
