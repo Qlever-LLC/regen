@@ -12,7 +12,7 @@ export const handler: Handlers = {
 		const data = await req.formData();
 		const browser = await (BROWSER
 			? connect({ wsEndpoint: BROWSER })
-			: launch({ cache: "node_modules/.astral" }));
+			: launch({ path: "node_modules/.bin/chrome" }));
 		try {
 			// TODO: Actually make PDF template page
 			const page = await browser.newPage(`https://www.google.com?q=${data}`);
