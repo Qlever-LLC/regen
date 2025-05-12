@@ -17,16 +17,18 @@
 	"exclude": ["**/_fresh/*"],
 	"imports": {
 		"$fresh/": "https://deno.land/x/fresh@1.7.3/",
-		"@astral/astral": "jsr:@astral/astral@^0.5.2",
-		"html2canvas": "npm:html2canvas@^1.4.1",
+		"@tailwindcss/postcss": "npm:@tailwindcss/postcss@^4.1.6",
+		"@types/hummus-recipe": "npm:@types/hummus-recipe@^1.8.8",
+		"hummus-recipe": "npm:hummus-recipe@^2.0.1",
 		"jspdf": "npm:jspdf@^3.0.1",
+		"pdf-lib": "npm:pdf-lib@^1.17.1",
 		"preact": "https://esm.sh/preact@10.22.0",
 		"preact/": "https://esm.sh/preact@10.22.0/",
 		"@preact/signals": "https://esm.sh/*@preact/signals@1.2.2",
 		"@preact/signals-core": "https://esm.sh/*@preact/signals-core@1.5.1",
-		"tailwindcss": "npm:tailwindcss@3.4.1",
-		"tailwindcss/": "npm:/tailwindcss@3.4.1/",
-		"tailwindcss/plugin": "npm:/tailwindcss@3.4.1/plugin.js",
+		"tailwindcss": "npm:tailwindcss@4.1.6",
+		"tailwindcss/": "npm:/tailwindcss@4.1.6/",
+		"tailwindcss/plugin": "npm:/tailwindcss@4.1.6/plugin.js",
 		"$std/": "https://deno.land/std@0.216.0/"
 	},
 	"compilerOptions": {

@@ -11,13 +11,6 @@ EXPOSE 8000
 RUN mkdir /var/deno_dir
 ENV DENO_DIR=/var/deno_dir
 
-# TODO: Cleanup this and make the image not so big
-# Install chrome
-RUN apt-get update &&\
-  apt-get install -y wget &&\
-  wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb &&\
-  apt-get install --no-install-recommends -y ./google-chrome-stable_current_amd64.deb
-
 # Copy the function code
 WORKDIR "/var/task"
 COPY . /var/task
