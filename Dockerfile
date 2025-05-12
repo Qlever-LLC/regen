@@ -15,16 +15,14 @@ ENV DENO_DIR=/var/deno_dir
 WORKDIR "/var/task"
 COPY . /var/task
 
-# add new user
-RUN adduser --disabled-password --gecos "" deno &&\
-  chown -R deno:deno /var/deno_dir &&\
-  chown -R deno:deno /var/task
-USER deno
+# Warmup caches
+#RUN timeout 10s deno run -A main.ts || [ $? -eq 124 ] || exit 1
+
+RUN deno install
 
 # Fresh ahead-of-time build
 RUN deno task build
 
-# Warmup caches
-#RUN timeout 10s deno run -A main.ts || [ $? -eq 124 ] || exit 1
+RUN deno cache main.ts
 
 CMD ["deno", "run", "-A", "main.ts"]
