@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Set up the base image
-FROM public.ecr.aws/awsguru/aws-lambda-adapter:0.9.0 AS aws-lambda-adapter
+FROM public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 AS aws-lambda-adapter
 FROM denoland/deno:bin-2.3.1 AS deno_bin
 FROM debian:bookworm-20230703-slim AS deno_runtime
 COPY --from=aws-lambda-adapter /lambda-adapter /opt/extensions/lambda-adapter
