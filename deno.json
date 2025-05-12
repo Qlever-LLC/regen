@@ -18,9 +18,6 @@
 	"imports": {
 		"$fresh/": "https://deno.land/x/fresh@1.7.3/",
 		"@tailwindcss/postcss": "npm:@tailwindcss/postcss@^4.1.6",
-		"@types/hummus-recipe": "npm:@types/hummus-recipe@^1.8.8",
-		"hummus-recipe": "npm:hummus-recipe@^2.0.1",
-		"jspdf": "npm:jspdf@^3.0.1",
 		"pdf-lib": "npm:pdf-lib@^1.17.1",
 		"preact": "https://esm.sh/preact@10.22.0",
 		"preact/": "https://esm.sh/preact@10.22.0/",
