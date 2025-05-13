@@ -1,39 +1,42 @@
 {
-  "version": "0.0.1",
-  "exclude": [".svelte-kit", "node_modules", ".vite"],
-  "tasks": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "preview": "vite preview",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
-  },
-  "lint": {
+	"version": "0.0.1",
+	"exclude": [".svelte-kit", "node_modules", ".vite"],
+	"tasks": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+	},
+	"lint": {
 		"rules": {
 			"tags": []
-    }
-  },
-  "imports": {
-    "@deno/vite-plugin": "npm:@deno/vite-plugin@^1.0.4",
-    "@sveltejs/adapter-node": "npm:@sveltejs/adapter-node@^5.2.12",
-    "svelte": "npm:svelte@^5.25.7",
-    "svelte-adapter-deno": "npm:svelte-adapter-deno@^0.9.1",
-    "svelte-check": "npm:svelte-check@^4.1.5",
-    "@sveltejs/kit": "npm:@sveltejs/kit@^2.20.4",
-    "@sveltejs/adapter-auto": "npm:@sveltejs/adapter-auto@^6.0.0",
-    "vite": "npm:vite@^6.2.5",
-    "@sveltejs/vite-plugin-svelte": "npm:@sveltejs/vite-plugin-svelte@^5.0.3",
-    "tailwindcss": "npm:tailwindcss@^4.1.3",
-    "@tailwindcss/vite": "npm:@tailwindcss/vite@^4.1.3",
-    "daisyui": "npm:daisyui@5.0.12"
-  },
-  "nodeModulesDir": "auto",
-  "compilerOptions": {
-    "checkJs": true,
-    "strict": true,
-    "lib": ["dom", "esnext"]
-  },
-  "unstable": [
-    "sloppy-imports"
-  ]
+		}
+	},
+	"imports": {
+		"@deno/vite-plugin": "npm:@deno/vite-plugin@^1.0.4",
+		"@signpdf/placeholder-pdf-lib": "npm:@signpdf/placeholder-pdf-lib@^3.2.6",
+		"@signpdf/signer-p12": "npm:@signpdf/signer-p12@^3.2.4",
+		"@signpdf/signpdf": "npm:@signpdf/signpdf@^3.2.5",
+		"@tailwindcss/postcss": "npm:@tailwindcss/postcss@^4.1.6",
+		"crypto": "node:crypto",
+		"node-forge": "npm:node-forge@^1.3.1",
+		"pdf-lib": "npm:pdf-lib@^1.17.1",
+		"svelte": "npm:svelte@^5.25.7",
+		"svelte-adapter-deno": "npm:svelte-adapter-deno@^0.9.1",
+		"svelte-check": "npm:svelte-check@^4.1.5",
+		"@sveltejs/kit": "npm:@sveltejs/kit@^2.20.4",
+		"vite": "npm:vite@^6.2.5",
+		"@sveltejs/vite-plugin-svelte": "npm:@sveltejs/vite-plugin-svelte@^5.0.3",
+		"tailwindcss": "npm:tailwindcss@^4.1.3",
+		"@tailwindcss/vite": "npm:@tailwindcss/vite@^4.1.3",
+		"daisyui": "npm:daisyui@5.0.12"
+	},
+	"nodeModulesDir": "auto",
+	"compilerOptions": {
+		"checkJs": true,
+		"strict": true,
+		"lib": ["dom", "esnext"]
+	},
+	"unstable": ["sloppy-imports"]
 }
