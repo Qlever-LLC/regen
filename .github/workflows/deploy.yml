@@ -30,7 +30,7 @@ jobs:
         uses: denoland/deployctl@v1
         with:
           project: "regenscore"
-          entrypoint: "build"
+          entrypoint: "build/index.js"
           root: "."
           
           
