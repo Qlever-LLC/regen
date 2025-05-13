@@ -1,5 +1,7 @@
 # syntax=docker/dockerfile:1
 
+ARG DENO_ENTRYPOINT="build"
+
 # Set up the base image
 FROM public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 AS aws-lambda-adapter
 FROM denoland/deno:bin-2.3.1 AS deno_bin
@@ -23,6 +25,6 @@ RUN deno install
 # Fresh ahead-of-time build
 RUN deno task build
 
-RUN deno cache main.ts
+RUN deno cache "${DENO_ENTRYPOINT}"
 
-CMD ["deno", "run", "-A", "main.ts"]
+CMD ["deno", "run", "-A", "${DENO_ENTRYPOINT}"]
