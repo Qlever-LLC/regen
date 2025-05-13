@@ -22,7 +22,8 @@
       Download generated certification
     </a>
   {/if}
-  <form method="POST" action="?/create">
+  <!-- FIXME: action="?/create" for svelte kit form action breaks on lambda -->
+  <form method="POST" action="/api/create">
     {#await getFields() then fields}
       {#each fields as field}
         {field.getName()} <input type="text" name={field.getName()} value="" />
