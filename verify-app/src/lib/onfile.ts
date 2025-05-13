@@ -10,3 +10,7 @@ export const onFile = async (file: File) => {
      
     
 };
+
+export const handleVerification = async (file: File) => {
+    
+}
