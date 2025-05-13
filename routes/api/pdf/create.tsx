@@ -25,7 +25,13 @@ export const handler: Handlers = {
 		}
 		const filled = await doc.save();
 		// TODO: Sign the PDF
-		return new Response(filled, { status: 201 });
+		return new Response(filled, {
+			status: 201,
+			headers: {
+				"Content-Type": "application/pdf",
+				"Content-Disposition": 'attachment; filename="certification.pdf',
+			},
+		});
 	},
 };
 
