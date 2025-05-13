@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onFile } from '../../routes/+server';
+    import { onFile } from '../../routes/onfile';
   
     let dragging = $state(false);
   
