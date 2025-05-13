@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onFile } from '../dropzone.ts';
+    import { onFile } from '../../routes/+server';
   
     let dragging = $state(false);
   
