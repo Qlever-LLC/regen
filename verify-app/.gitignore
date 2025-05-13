@@ -1,3 +1,5 @@
 .vite/
 
 .svelte-kit/
+
+build/
