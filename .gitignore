@@ -7,5 +7,12 @@
 
 # Fresh build directory
 _fresh/
+
+build/
+
 # npm dependencies
 node_modules/
+
+.vite/
+
+.svelte-kit/

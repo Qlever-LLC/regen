@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Dropzone from '../lib/components/Dropzone.svelte'
-  import Verification from '../lib/components/Verification.svelte'
+  import Dropzone from "../../lib/components/Dropzone.svelte";
+  import Verification from "../../lib/components/Verification.svelte";
 
   const certificate = $state();
 </script>
@@ -9,13 +9,12 @@
   <h1>Verify App</h1>
 
   {#if certificate}
-    <Verification /> 
+    <Verification />
   {:else}
     <div class="card">
       <Dropzone />
     </div>
   {/if}
-
 </main>
 
 <style>

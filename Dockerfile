@@ -23,6 +23,6 @@ RUN deno install
 # Fresh ahead-of-time build
 RUN deno task build
 
-RUN deno cache main.ts
+RUN deno cache build
 
-CMD ["deno", "run", "-A", "main.ts"]
+CMD ["deno", "run", "-A", "build"]
