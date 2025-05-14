@@ -1,7 +1,5 @@
-import { PDFDocument } from "pdf-lib";
+import type { PDFDocument } from "pdf-lib";
 import { pdflibAddPlaceholder } from "@signpdf/placeholder-pdf-lib";
-import { R } from "../../build/server/chunks/index-2de64aee.js";
-import { _ } from '../../.svelte-kit/ambient';
 
 
 export const computeScore = (_data: FormData) => {
@@ -17,10 +15,11 @@ export const computeScore = (_data: FormData) => {
 
 export const generateRegenPDF = async (
 	data: FormData,
-	scores: Record<string, number>,
+	doc: PDFDocument
 ) => {
-	const template = await fetch("/template2.pdf");
-	const doc = await PDFDocument.load(await template.arrayBuffer());
+	// Compute a score from the form
+	const scores = computeScore(data)
+	
 	// FIXME: Probably should just have the placeholder builtin to template
 	pdflibAddPlaceholder({
 		pdfDoc: doc,
@@ -46,9 +45,13 @@ export const generateRegenPDF = async (
 
 	const pacData = {
 		dataOwner: {
-			name: data.get("DatOwnerName")?.toString(),
-			address: data.get("DatOwnerAddress")?.toString(),
-			website: data.get("DatOwnerWebsite")?.toString(),
+			name: data.get("CompanyName")?.toString(),
+			address: {
+				street1: data.get("Address1")?.toString(),
+				city: data.get("City")?.toString(),
+				state: data.get("State")?.toString(),
+				zip: data.get("Zip")?.toString(),
+			}
 		},
 		escrowProvider: {
 			name: "The Qlever Company, LLC",

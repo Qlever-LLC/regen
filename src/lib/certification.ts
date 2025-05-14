@@ -1,15 +1,18 @@
 /// <reference lib="deno.ns" />
 
 import type { Action } from "@sveltejs/kit";
+import { Buffer } from "node:buffer";
 
 import signpdf from "@signpdf/signpdf";
 import { P12Signer } from "@signpdf/signer-p12";
 import { 
-	computeScore,
 	generateRegenPDF
 } from "./regen";
-import { PDFName } from 'pdf-lib';
-import { generateKeyPairSync } from "node:crypto";
+import { 
+	PDFDocument,
+	PDFName
+} from 'pdf-lib';
+import { uploadFile } from "./drive";
 
 // FIXME: How to do this the sveltekit way?
 const cert = Deno.env.get("P12_CERT_PATH");
@@ -17,13 +20,17 @@ const cert = Deno.env.get("P12_CERT_PATH");
 /**
  * Takes a request of form data and generates the PDF
  */
-export const create = (async ({ request }) => {
+export const create = (async ({ 
+	request,
+	fetch
+}) => {
 	// Get regen form data
 	const data = await request.formData();
-
+	const template = await fetch("/template2.pdf");
+	const doc = await PDFDocument.load(await template.arrayBuffer());
 
 	// Populate the output PDF and PAC
-	const { doc, form, pacData } = await generateRegenPDF(data);
+	const { form, pacData } = await generateRegenPDF(data, doc);
 
 	// @ts-expect-error fix pacData type later
 	const pac = await generatePAC(pacData);
@@ -38,7 +45,14 @@ export const create = (async ({ request }) => {
 	const signer = cert ? new P12Signer(await Deno.readFile(cert)) : undefined;
 
 	// TODO: Actually try to sign the PDF
-	return signer ? await signpdf.default.sign(filled, signer) : filled;
+	const signed = signer ? await signpdf.default.sign(filled, signer) : filled;
+	await uploadFile({
+		filename: `RegenScoreCert-${pacData.dataOwner.name}.pdf`,
+		content: Buffer.from(signed), // or Uint8Array directly
+		mimeType: 'application/pdf',
+		parentFolderId: '1Zycnk_gjSeRjb9O1sN__gInSIgcOaXcv' 
+	  });
+	return signed;
 }) satisfies Action;
 
 
