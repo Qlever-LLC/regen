@@ -1,9 +1,5 @@
 import type { PDFDocument } from "pdf-lib";
 import { pdflibAddPlaceholder } from "@signpdf/placeholder-pdf-lib";
-<<<<<<< HEAD
-
-=======
->>>>>>> af42bd3dd35847e9d030282e5731426379aec5f7
 
 export const computeScore = (_data: FormData) => {
 	return {
