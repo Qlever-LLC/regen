@@ -1,17 +1,19 @@
 import type { PDFDocument } from "pdf-lib";
 import { pdflibAddPlaceholder } from "@signpdf/placeholder-pdf-lib";
+<<<<<<< HEAD
 
+=======
+>>>>>>> af42bd3dd35847e9d030282e5731426379aec5f7
 
 export const computeScore = (_data: FormData) => {
 	return {
 		regenscore: _data.get("RegenScore") as unknown as number,
-		air: _data.get('AirScore') as unknown as number,
-		water: _data.get('WaterScore') as unknown as number,
-		soil: _data.get('SoilScore') as unknown as number,
-		equity: _data.get('EquityScore') as unknown as number,
+		air: _data.get("AirScore") as unknown as number,
+		water: _data.get("WaterScore") as unknown as number,
+		soil: _data.get("SoilScore") as unknown as number,
+		equity: _data.get("EquityScore") as unknown as number,
 	};
-}
-
+};
 
 export const generateRegenPDF = async (
 	data: FormData,
@@ -65,8 +67,8 @@ export const generateRegenPDF = async (
 			destination: data.get("Destination")?.toString(),
 			certificateId: data.get("CertificateId")?.toString(),
 			issueDate: new Date().toLocaleDateString(),
-		}
-	}
-	
+		},
+	};
+
 	return { form, doc, pacData };
-}
+};

@@ -23,7 +23,7 @@
     </a>
   {/if}
   <!-- FIXME: action="?/create" for svelte kit form action breaks on lambda -->
-  <form method="POST" action="/api/create">
+  <form method="POST" action="?">
     {#await getFields() then fields}
       {#each fields as field}
         {field.getName()} <input type="text" name={field.getName()} value="" />
