@@ -2,10 +2,14 @@
 
 import type { Action } from "@sveltejs/kit";
 
-import { PDFDocument } from "pdf-lib";
-import { pdflibAddPlaceholder } from "@signpdf/placeholder-pdf-lib";
 import signpdf from "@signpdf/signpdf";
 import { P12Signer } from "@signpdf/signer-p12";
+import { 
+	computeScore,
+	generateRegenPDF
+} from "./regen";
+import { PDFName } from 'pdf-lib';
+import { generateKeyPairSync } from "node:crypto";
 
 // FIXME: How to do this the sveltekit way?
 const cert = Deno.env.get("P12_CERT_PATH");
@@ -13,33 +17,23 @@ const cert = Deno.env.get("P12_CERT_PATH");
 /**
  * Takes a request of form data and generates the PDF
  */
-export const create = (async ({ request, fetch }) => {
-	const template = await fetch("/template.pdf");
-	const doc = await PDFDocument.load(await template.arrayBuffer());
-	// FIXME: Probably should just have the placeholder builtin to template
-	pdflibAddPlaceholder({
-		pdfDoc: doc,
-		reason: "test",
-		contactInfo: "test@qlever.io",
-		name: "test",
-		location: "here",
-	});
-
-	const form = doc.getForm();
-	const fields = form.getFields();
+export const create = (async ({ request }) => {
+	// Get regen form data
 	const data = await request.formData();
-	for (const field of fields) {
-		const name = field.getName();
-		try {
-			//TODO: Non-text field support
-			const text = form.getTextField(name);
-			text.setText(data.get(name)?.toString());
-		} catch (error: unknown) {
-			console.warn(error, `Failed to handle form field ${name}`);
-		}
-	}
+
+
+	// Populate the output PDF and PAC
+	const { doc, form, pacData } = await generateRegenPDF(data);
+
+	// @ts-expect-error fix pacData type later
+	const pac = await generatePAC(pacData);
 
 	form.flatten();
+
+	// Now add the PAC json
+	const customData = doc.context.obj({ Data: JSON.stringify(pac) });
+	doc.catalog.set(PDFName.of('CustomData'), doc.context.register(customData));
+
 	const filled = await doc.save();
 	const signer = cert ? new P12Signer(await Deno.readFile(cert)) : undefined;
 
@@ -47,35 +41,21 @@ export const create = (async ({ request, fetch }) => {
 	return signer ? await signpdf.default.sign(filled, signer) : filled;
 }) satisfies Action;
 
-export const verify = (async () => {}) satisfies Action;
-export const createPAC = async (
-	licensePlate: Record<string, any>,
-	pacData: Record<string, any>
+
+// Generic verification of the PAC
+export const verify = (async () => {
+
+}) satisfies Action;
+
+
+export const generatePAC = async (
+	pacData: Record<string, number>
 ) => {
 	return {
-		pac: {
-
-		}
+		sadie: 'foo'
 	}
 }
 
-export const pac = {
-	sadie: {
-	},
-	escrowProvider: {
-		name: "The Qlever Company, LLC",
-		address: "1234 Main St, Suite 100, San Francisco, CA 94105",
-		phone: "+1 (415) 555-1234",
-		email: "info@qlever.io",
-		website: "https://www.qlever.io",
-		publickey: ""
-	},
-	dataOwner: {
-		name: "Farmer Joe",
-		address: "1080 North 500 East, Bakersfield, CA 93308",
-		email: "farmerjoe@example.com",
-	},
-	pacData: {}
+export type PAC = {
+	sadie: string;
 }
-
-// Remove the sha256 hash of the pac and ensure the hash can be regenerated

@@ -2,7 +2,7 @@
   import { PDFDocument } from "pdf-lib";
 
   async function getFields() {
-    const template = await fetch("/template.pdf");
+    const template = await fetch("/template2.pdf");
     const doc = await PDFDocument.load(await template.arrayBuffer());
     const form = doc.getForm();
     const fields = form.getFields();
