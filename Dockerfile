@@ -18,7 +18,7 @@ COPY . /var/task
 # Warmup caches
 #RUN timeout 10s deno run -A main.ts || [ $? -eq 124 ] || exit 1
 
-RUN deno install
+#RUN deno install
 
 # Fresh ahead-of-time build
 RUN deno task build
