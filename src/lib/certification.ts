@@ -1,5 +1,6 @@
 /// <reference lib="deno.ns" />
 
+import forge from "node-forge";
 import type { Action } from "@sveltejs/kit";
 import { Buffer } from "node:buffer";
 import { sha256 } from "js-sha256";
@@ -61,7 +62,8 @@ export const create = (async ({
 		content: Buffer.from(signed), // or Uint8Array directly
 		mimeType: 'application/pdf',
 		parentFolderId: DRIVE_BASE_ID,
-	  });
+	});
+
 	return signed;
 }) satisfies Action;
 
@@ -80,29 +82,32 @@ export type verification = {
 }
 
 // Generic verification of the PAC
-export const verify = (async (pdf: Uint8Array) => {
+export const verify = (async (pdfBytes: Uint8Array) => {
+	//1. verify the pdf signature
+	const { signedData: pdf, signature, valid } = await extractSignatureData(pdfBytes);
 
-	//1. extract the PAC from the PDF
+	//2. extract the PAC from the PDF
 	const pac = await extractEmbeddedJSON(pdf);
 
-	if (!pac) return {
-		pdfContainsPAC: false,
-	};
+	const pdfContainsData = !!pac;
+	if (!pdfContainsData) return { pdfContainsData }
 
-	//1. verify the pac wasn't modified
+	//3. verify the pac wasn't modified
 	const pacCopy = JSON.parse(JSON.stringify(pac));
 	// biome-ignore lint/performance/noDelete: 
 	delete pacCopy.sadie;
 
 	const unchanged = sha256(JSON.stringify(pacCopy)) === pac.sadie;
 
-	//1. confirm the PAC was signed by a trusted escrow provider
+	//4. confirm the PAC was signed by a trusted escrow provider
 	const escrowTrusted = 
 	  Object.values(trustedList).map(v => v.key).includes(pac.escrowProvider.key);
 
 	return {
 		verification: {
-			pdfContainsData: true,
+			pdfContainsData,
+			pdfSigned: !!signature,
+			valid,
 			unchanged,
 			dataOwner: {
 				present: !!pac.dataOwner.signature,
@@ -151,7 +156,6 @@ export type PAC<T> = {
 	pac: T; 
 }
 
-
 async function extractEmbeddedJSON(
 	pdfBytes: Uint8Array
 ): Promise<PAC<Regenscore>| null> {
@@ -185,3 +189,127 @@ async function extractEmbeddedJSON(
     return null;
   }
 }
+
+export function extractSignatureData(pdfBytes: Uint8Array): {
+	signedData: Uint8Array;
+	signature: Uint8Array;
+	valid: boolean;
+} {
+	const pdfStr = new TextDecoder("latin1").decode(pdfBytes); // latin1 preserves raw bytes
+  
+	// Extract the /ByteRange
+	const byteRangeMatch = pdfStr.match(
+	  /\/ByteRange\s*\[\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*\]/
+	);
+	if (!byteRangeMatch) throw new Error("No /ByteRange found in PDF");
+  
+	const [start1, len1, start2, len2] = byteRangeMatch
+	  .slice(1)
+	  .map((n) => Number.parseInt(n, 10));
+  
+	const signedData = new Uint8Array(
+	  len1 + len2
+	);
+	signedData.set(pdfBytes.slice(start1, start1 + len1), 0);
+	signedData.set(pdfBytes.slice(start2, start2 + len2), len1);
+  
+	// Extract the /Contents
+	const contentsMatch = pdfStr.match(/\/Contents\s*<([0-9A-Fa-f\s]+)>/);
+	if (!contentsMatch) throw new Error("No /Contents found in PDF");
+  
+	let hex = contentsMatch[1].replace(/\s+/g, '');
+	let signature = Uint8Array.from(
+		(hex.match(/.{2}/g) || []).map((b) => Number.parseInt(b, 16))
+	);
+  
+	// Strip trailing 0-padding (optional, but common with fixed-length buffers)
+	while (signature[signature.length - 1] === 0) {
+	  signature = signature.slice(0, -1);
+	}
+  
+	return { 
+		signedData,
+		signature, 
+		valid: validateSignature(signedData, signature)
+	};
+}
+
+
+// Convert your Uint8Array signature into a Forge-readable DER buffer
+function uint8ArrayToForgeBuffer(data: Uint8Array) {
+	const binaryStr = Array.from(data)
+	  .map((b) => String.fromCharCode(b))
+	  .join('');
+	  //@ts-expect-error "Forge doesn’t publish good typings — so any type enforcement from Deno is guessing wrong."
+	return forge.util.createBuffer(binaryStr, 'binary');
+}
+  
+export function validateSignature(signedDataUint8: Uint8Array, signatureUint8: Uint8Array): boolean {
+  try {
+    // Parse CMS signature (PKCS#7)
+    const der = uint8ArrayToForgeBuffer(signatureUint8);
+    const asn1 = forge.asn1.fromDer(der);
+    const p7 = forge.pkcs7.messageFromAsn1(asn1);
+
+    // Check if signature is detached (i.e., external data was signed)
+    if (!p7.signers.length) throw new Error("No signers found in signature.");
+
+    // Convert signed content to forge buffer
+    const signedData = forge.util.createBuffer(
+		forge.util.binary.raw.encode([...signedDataUint8]),
+		'binary'
+	);
+
+    // Validate the signature (note: assumes detached mode)
+    const valid = p7.verify({
+      detached: true,
+      content: signedData
+    });
+
+    return valid;
+  } catch (e) {
+    console.error("Signature validation failed:", e);
+    return false;
+  }
+}
+
+function isSignedData(
+	obj: forge.pkcs7.PkcsEnvelopedData | forge.pkcs7.PkcsSignedData
+): obj is forge.pkcs7.PkcsSignedData {
+	return typeof (obj as any).signers !== "undefined";
+}
+
+async function verifySignature({
+	signedData,
+	signature,
+	certificateDer,
+  }: {
+	signedData: Uint8Array;
+	signature: Uint8Array;
+	certificateDer: Uint8Array; // X.509 cert in DER
+  }): Promise<boolean> {
+	// Import the certificate
+	const cert = await crypto.subtle.importKey(
+	  "spki", // X.509 SubjectPublicKeyInfo (public key format)
+	  certificateDer,
+	  {
+		name: "RSASSA-PKCS1-v1_5",
+		hash: "SHA-256",
+	  },
+	  false,
+	  ["verify"]
+	);
+  
+	// Verify the signature
+	const valid = await crypto.subtle.verify(
+	  {
+		name: "RSASSA-PKCS1-v1_5",
+	  },
+	  cert,
+	  signature,
+	  signedData
+	);
+  
+	return valid;
+}
+  
