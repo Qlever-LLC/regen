@@ -15,6 +15,7 @@
     "npm:daisyui@5.0.12": "5.0.12",
     "npm:daisyui@^5.0.35": "5.0.35",
     "npm:googleapis@148": "148.0.0",
+    "npm:js-sha256@0.11": "0.11.0",
     "npm:node-forge@^1.3.1": "1.3.1",
     "npm:pdf-lib@^1.17.1": "1.17.1",
     "npm:svelte-adapter-deno@~0.9.1": "0.9.1_@sveltejs+kit@2.21.0__@sveltejs+vite-plugin-svelte@5.0.3___svelte@5.30.0____acorn@8.14.1___vite@6.3.5____picomatch@4.0.2__svelte@5.30.0___acorn@8.14.1__vite@6.3.5___picomatch@4.0.2__acorn@8.14.1_rollup@3.29.5_@sveltejs+vite-plugin-svelte@5.0.3__svelte@5.30.0___acorn@8.14.1__vite@6.3.5___picomatch@4.0.2_svelte@5.30.0__acorn@8.14.1_vite@6.3.5__picomatch@4.0.2",
@@ -997,6 +998,9 @@
       "integrity": "sha512-rg9zJN+G4n2nfJl5MW3BMygZX56zKPNVEYYqq7adpmMh4Jn2QNEwhvQlFy6jPVdcod7txZtKHWnyZiA3a0zP7A==",
       "bin": true
     },
+    "js-sha256@0.11.0": {
+      "integrity": "sha512-6xNlKayMZvds9h1Y1VWc0fQHQ82BxTXizWPEtEeGvmOUYpBRy4gbWroHLpzowe6xiQhHpelCQiE7HEdznyBL9Q=="
+    },
     "json-bigint@1.0.0": {
       "integrity": "sha512-SiPv/8VpZuWbvLSMtTDU8hEfrZWg/mH/nV/b4o0CYbSxu1UIQPLdwKOCIyLQX+VIPO5vrLX3i8qtqFyhdPSUSQ==",
       "dependencies": [
@@ -1468,6 +1472,7 @@
         "npm:@tailwindcss/postcss@^4.1.6",
         "npm:@tailwindcss/vite@^4.1.6",
         "npm:daisyui@^5.0.35",
+        "npm:js-sha256@0.11",
         "npm:node-forge@^1.3.1",
         "npm:pdf-lib@^1.17.1",
         "npm:svelte-check@^4.2.0",

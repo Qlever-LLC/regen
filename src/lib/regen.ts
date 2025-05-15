@@ -55,6 +55,7 @@ export const generateRegenPDF = async (
 			name: "The Qlever Company, LLC",
 			address: "",
 			website: "https://www.qlever.io",
+			key: '',
 		},
 		licensePlate: {
 			header: "Certificate Information",
@@ -68,3 +69,11 @@ export const generateRegenPDF = async (
 
 	return { form, doc, pacData };
 };
+
+export type Regenscore = {
+	regenscore: number;
+	air: number;
+	water: number;
+	soil: number;
+	equity: number;
+}
