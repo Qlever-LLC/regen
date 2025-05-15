@@ -21,7 +21,9 @@ import { trustedList } from './trusted.ts';;
 
 // FIXME: How to do this the sveltekit way?
 const cert = Deno.env.get("P12_CERT_PATH");
-const PAC_META_NAME = "PAC_Data"
+const CATALOG_ENTRY = "PAC"
+const DRIVE_BASE_ID = "1Zycnk_gjSeRjb9O1sN__gInSIgcOaXcv"
+const CATALOG_KEY = "payload"
 
 /**
  * Takes a request of form data and generates the PDF
@@ -44,8 +46,8 @@ export const create = (async ({
 	form.flatten();
 
 	// Now add the PAC json
-	const customData = doc.context.obj({ Data: JSON.stringify(pac) });
-	doc.catalog.set(PDFName.of(PAC_META_NAME), doc.context.register(customData));
+	const customData = doc.context.obj({ [CATALOG_KEY]: PDFString.of(JSON.stringify(pac)) });
+	doc.catalog.set(PDFName.of(CATALOG_ENTRY), doc.context.register(customData));
 
 	const filled = await doc.save();
 	const signer = cert ? new P12Signer(await Deno.readFile(cert)) : undefined;
@@ -56,7 +58,7 @@ export const create = (async ({
 		filename: `RegenScoreCert-${pacData.dataOwner.name}.pdf`,
 		content: Buffer.from(signed), // or Uint8Array directly
 		mimeType: 'application/pdf',
-		parentFolderId: '1Zycnk_gjSeRjb9O1sN__gInSIgcOaXcv' 
+		parentFolderId: DRIVE_BASE_ID,
 	  });
 	return signed;
 }) satisfies Action;
@@ -70,6 +72,9 @@ export type verification = {
 	escrowProvider?: {
 		trusted: boolean;
 	};
+	code: {
+		trusted: boolean;
+	}
 }
 
 // Generic verification of the PAC
@@ -94,17 +99,20 @@ export const verify = (async (pdf: Uint8Array) => {
 	  Object.values(trustedList).map(v => v.key).includes(pac.escrowProvider.key);
 
 	return {
-		pdfContainsData: true,
-		unchanged,
-		dataOwner: {
-			trusted: escrowTrusted, // escrow 'vouches' for data owner 
+		verification: {
+			pdfContainsData: true,
+			unchanged,
+			dataOwner: {
+				trusted: escrowTrusted, // escrow 'vouches' for data owner 
+			},
+			escrowProvider: {
+				trusted: escrowTrusted,
+			},
+			code: {
+				trusted: true, // escrow 'vouches' for code 
+			},
 		},
-		escrowProvider: {
-			trusted: escrowTrusted,
-		},
-		code: {
-			trusted: true, // escrow 'vouches' for code 
-		}
+		pac
 	}
 });
 
@@ -145,34 +153,29 @@ async function extractEmbeddedJSON(
 	pdfBytes: Uint8Array
 ): Promise<PAC<Regenscore>| null> {
   const doc = await PDFDocument.load(pdfBytes);
-  const pacRef = doc.catalog.get(PDFName.of(PAC_META_NAME));
+  const catRef = doc.catalog.get(PDFName.of(CATALOG_ENTRY));
   
-  if (!pacRef) {
-    console.warn(`No /${PAC_META_NAME} found in PDF catalog.`);
+  if (!catRef) {
+    console.warn(`No /${CATALOG_ENTRY} entry found in PDF catalog.`);
     return null;
   }
 
-  const pac = doc.context.lookup(pacRef);
+  const catEntry = doc.context.lookup(catRef);
 
-  if (!(pac instanceof PDFDict)) {
-    console.warn("Expected CustomData to be a PDFDict.");
+  if (!(catEntry instanceof PDFDict)) {
+    console.warn(`Expected ${CATALOG_ENTRY} to be a PDFDict.`);
     return null;
   }
 
-  if (!pac|| !pac.get) {
-    console.warn(`${PAC_META_NAME} exists but could not be dereferenced.`);
-    return null;
-  }
+  const pacData = catEntry.get(PDFName.of(`${CATALOG_KEY}`));
 
-  const dataValue = pac.get(PDFName.of('Data'));
-
-  if (!(dataValue instanceof PDFString)) {
-    console.warn(`No 'Data' key in /${PAC_META_NAME} dictionary.`);
+  if (!(pacData instanceof PDFString)) {
+    console.warn(`No ${CATALOG_KEY} key in /${CATALOG_ENTRY} dictionary.`);
     return null;
   }
 
   try {
-    const jsonString = dataValue.decodeText();
+    const jsonString = pacData.decodeText();
     return JSON.parse(jsonString);
   } catch (e) {
     console.error("Failed to parse embedded JSON:", e);

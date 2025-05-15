@@ -1,6 +1,22 @@
 <script lang="ts">
-    import { onFile } from '../onfile';
-  
+  let { 
+    verification = $bindable(),
+    pac = $bindable(),
+  } = $props();
+    async function onFile(file: File) {
+      // Or use FormData?
+      const result = await fetch('/api/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/pdf',
+        },
+        body: file
+      })
+
+      const data = await result.json();
+      verification = data.verification;
+      pac = data.pac;
+    }
     let dragging = $state(false);
   
     function handleDrop(event: DragEvent) {

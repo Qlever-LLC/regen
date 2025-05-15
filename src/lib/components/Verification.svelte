@@ -1,13 +1,15 @@
 <script lang="ts">
-  /*
-  const dataOwner = $state(false);
-  const escrowProvider = $state(false);
-  const codeExecution = $state(false);
-  */
+  let { 
+    verification = $bindable(),
+    pac = $bindable()
+  } = $props();
+  let { dataOwner, escrowProvider, codeExecution } = verification;
+  console.log(verification, pac)
 </script>
   
 <div>
   <h1>Data Owner</h1>
+    <p>{pac.dataOwner.name}</p>
   {#if dataOwner}
     <p>Verified!</p>
   {:else}
@@ -15,6 +17,7 @@
   {/if}
 
   <h1>Escrow Provider</h1>
+    <p>{pac.escrowProvider.name}</p>
   {#if escrowProvider}
     <p>Verified!</p>
   {:else}

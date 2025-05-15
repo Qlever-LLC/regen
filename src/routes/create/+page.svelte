@@ -9,7 +9,7 @@
     return fields;
   }
 
-  let { form } = $props();
+  const { form } = $props();
 </script>
 
 <main>
