@@ -79,8 +79,8 @@ export const verify = (async (pdf: Uint8Array) => {
 	const pac = await extractEmbeddedJSON(pdf);
 
 	if (!pac) return {
-
-	}
+		pdfContainsPAC: false,
+	};
 
 	//1. verify the pac wasn't modified
 	const pacCopy = JSON.parse(JSON.stringify(pac));
