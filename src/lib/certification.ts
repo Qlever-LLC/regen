@@ -34,7 +34,7 @@ export const create = (async ({
 }) => {
 	// Get regen form data
 	const data = await request.formData();
-	const template = await fetch("/template2.pdf");
+	const template = await fetch("/template3.pdf");
 	const doc = await PDFDocument.load(await template.arrayBuffer());
 
 	// Populate the output PDF and PAC
@@ -54,6 +54,8 @@ export const create = (async ({
 
 	// TODO: Actually try to sign the PDF
 	const signed = signer ? await signpdf.default.sign(filled, signer) : filled;
+
+	// Sync to Google Drive
 	await uploadFile({
 		filename: `RegenScoreCert-${pacData.dataOwner.name}.pdf`,
 		content: Buffer.from(signed), // or Uint8Array directly
@@ -103,13 +105,14 @@ export const verify = (async (pdf: Uint8Array) => {
 			pdfContainsData: true,
 			unchanged,
 			dataOwner: {
+				present: !!pac.dataOwner.signature,
 				trusted: escrowTrusted, // escrow 'vouches' for data owner 
 			},
 			escrowProvider: {
 				trusted: escrowTrusted,
 			},
 			code: {
-				trusted: true, // escrow 'vouches' for code 
+				trusted: escrowTrusted, // escrow 'vouches' for code 
 			},
 		},
 		pac

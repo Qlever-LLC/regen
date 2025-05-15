@@ -1,40 +1,19 @@
 <script lang="ts">
+  let {
+    pac = $bindable()
+  } = $props();
 </script>
   
+{#if pac}
   <div>
-    <h1>Data Owner</h1>
-    <p>Verified!</p>
+    <h2>Data Owner</h2>
+    {pac.dataOwner.name}
 
-    <h1>Escrow Provider</h1>
-    <p>Verified!</p>
+    <h2>Escrow Provider</h2>
+    {pac.escrowProvider.name}
     
-    <h1>Code Execution</h1>
-    <p>Verified!</p>
+    <h2>Code Execution</h2>
   </div>
-  
-  <style>
-    .dropzone {
-      border: 2px dashed #aaa;
-      border-radius: 8px;
-      padding: 2rem;
-      text-align: center;
-      transition: background-color 0.2s;
-      cursor: pointer;
-      position: relative;
-    }
-  
-    .dropzone.dragging {
-      background-color: #eef;
-      border-color: #66f;
-    }
-  
-    input[type="file"] {
-      opacity: 0;
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 0;
-      left: 0;
-      cursor: pointer;
-    }
-  </style>
+{:else}
+  <h2>License Plate data couldn't be extracted.</h2>
+{/if}
