@@ -10,24 +10,24 @@
 </script>
   
 <div>
+  <hr />
   <LicensePlate pac={pac} />
   <hr />
-  <h1>Data Owner: </h1>
+  <h3>Data Owner: </h3>
   {#if dataOwner}
     <p>Verified!</p>
   {:else}
     <p>Not Verified</p>
   {/if}
 
-  <h1>Escrow Provider:</h1>
-    <p>{pac.escrowProvider.name}</p>
+  <h3>Escrow Provider:</h3>
   {#if escrowProvider}
     <p>Verified!</p>
   {:else}
     <p>Not Verified</p>
   {/if}
 
-  <h1>Code Execution:</h1>
+  <h3>Code Execution:</h3>
   {#if codeExecution}
     <p>Verified!</p>
   {:else}

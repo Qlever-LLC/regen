@@ -22,6 +22,8 @@ import { trustedList } from './trusted.ts';;
 
 // FIXME: How to do this the sveltekit way?
 const cert = Deno.env.get("P12_CERT_PATH");
+const der = Deno.env.get("CERT_DER");
+const passphrase = Deno.env.get("CERT_PASS");
 const CATALOG_ENTRY = "PAC"
 const DRIVE_BASE_ID = "1Zycnk_gjSeRjb9O1sN__gInSIgcOaXcv"
 const CATALOG_KEY = "payload"
@@ -51,7 +53,7 @@ export const create = (async ({
 	doc.catalog.set(PDFName.of(CATALOG_ENTRY), doc.context.register(customData));
 
 	const filled = await doc.save();
-	const signer = cert ? new P12Signer(await Deno.readFile(cert)) : undefined;
+	const signer = cert ? new P12Signer(await Deno.readFile(cert), {passphrase}) : undefined;
 
 	// TODO: Actually try to sign the PDF
 	const signed = signer ? await signpdf.default.sign(filled, signer) : filled;
@@ -190,11 +192,11 @@ async function extractEmbeddedJSON(
   }
 }
 
-export function extractSignatureData(pdfBytes: Uint8Array): {
+export async function extractSignatureData(pdfBytes: Uint8Array): Promise<{
 	signedData: Uint8Array;
 	signature: Uint8Array;
 	valid: boolean;
-} {
+}> {
 	const pdfStr = new TextDecoder("latin1").decode(pdfBytes); // latin1 preserves raw bytes
   
 	// Extract the /ByteRange
@@ -217,7 +219,7 @@ export function extractSignatureData(pdfBytes: Uint8Array): {
 	const contentsMatch = pdfStr.match(/\/Contents\s*<([0-9A-Fa-f\s]+)>/);
 	if (!contentsMatch) throw new Error("No /Contents found in PDF");
   
-	let hex = contentsMatch[1].replace(/\s+/g, '');
+	const hex = contentsMatch[1].replace(/\s+/g, '');
 	let signature = Uint8Array.from(
 		(hex.match(/.{2}/g) || []).map((b) => Number.parseInt(b, 16))
 	);
@@ -230,12 +232,12 @@ export function extractSignatureData(pdfBytes: Uint8Array): {
 	return { 
 		signedData,
 		signature, 
-		valid: validateSignature(signedData, signature)
+		valid: await verifySignature({signedData, signature })
 	};
 }
 
-
 // Convert your Uint8Array signature into a Forge-readable DER buffer
+/*
 function uint8ArrayToForgeBuffer(data: Uint8Array) {
 	const binaryStr = Array.from(data)
 	  .map((b) => String.fromCharCode(b))
@@ -243,7 +245,7 @@ function uint8ArrayToForgeBuffer(data: Uint8Array) {
 	  //@ts-expect-error "Forge doesn’t publish good typings — so any type enforcement from Deno is guessing wrong."
 	return forge.util.createBuffer(binaryStr, 'binary');
 }
-  
+ 
 export function validateSignature(signedDataUint8: Uint8Array, signatureUint8: Uint8Array): boolean {
   try {
     // Parse CMS signature (PKCS#7)
@@ -278,16 +280,19 @@ function isSignedData(
 ): obj is forge.pkcs7.PkcsSignedData {
 	return typeof (obj as any).signers !== "undefined";
 }
+*/
 
 async function verifySignature({
 	signedData,
 	signature,
-	certificateDer,
   }: {
 	signedData: Uint8Array;
 	signature: Uint8Array;
-	certificateDer: Uint8Array; // X.509 cert in DER
   }): Promise<boolean> {
+	const certificateDer = der ? await Deno.readFile(der) : undefined;
+
+	if (!certificateDer) throw new Error("Certificate not provided.");
+	console.log('CERTIFICATE DER', certificateDer)
 	// Import the certificate
 	const cert = await crypto.subtle.importKey(
 	  "spki", // X.509 SubjectPublicKeyInfo (public key format)
@@ -299,16 +304,20 @@ async function verifySignature({
 	  false,
 	  ["verify"]
 	);
+	console.log('IMPORTED CERTIFICATE')
   
 	// Verify the signature
 	const valid = await crypto.subtle.verify(
 	  {
 		name: "RSASSA-PKCS1-v1_5",
+		hash: "SHA-256",
 	  },
 	  cert,
 	  signature,
 	  signedData
 	);
+
+	console.log('FINISHED', valid);
   
 	return valid;
 }
