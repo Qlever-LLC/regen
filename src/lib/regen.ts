@@ -1,32 +1,28 @@
-import type { PDFDocument } from "pdf-lib";
-import { pdflibAddPlaceholder } from "@signpdf/placeholder-pdf-lib";
+import type { PDFDocument, PDFForm } from "pdf-lib";
+import type { Sadie } from "./types.ts";
 
-export const computeScore = (_data: FormData) => {
+export const computeScore = (formData: Record<string, any>) => {
 	return {
-		regenscore: _data.get("Regen Score") as unknown as number,
-		air: _data.get("Air Score") as unknown as number,
-		water: _data.get("Water Score") as unknown as number,
-		soil: _data.get("Soil Score") as unknown as number,
-		equity: _data.get("Equity Score") as unknown as number,
+		regenscore: formData?.["Regen Score"] as unknown as number,
+		air: formData?.["Air Score"] as unknown as number,
+		water: formData?.["Water Score"] as unknown as number,
+		soil: formData?.["Soil Score"] as unknown as number,
+		equity: formData?.["Equity Score"] as unknown as number,
 	};
 };
 
 export const generateRegenPDF = async (
-	data: FormData,
+	formData: Record<string, any>,
 	doc: PDFDocument
-) => {
+): Promise<{
+  pacData: Regenscore,
+  dataOwner: Sadie["dataOwner"],
+  form: PDFForm,
+  doc: PDFDocument,
+ }> => {
 	// Compute a score from the form
-	const scores = computeScore(data)
+	const scores = computeScore(formData)
 	
-	// FIXME: Probably should just have the placeholder builtin to template
-	pdflibAddPlaceholder({
-		pdfDoc: doc,
-		reason: "test",
-		contactInfo: "test@qlever.io",
-		name: "test",
-		location: "here",
-	});
-
 	const form = doc.getForm();
 	const fields = form.getFields();
 
@@ -35,45 +31,30 @@ export const generateRegenPDF = async (
 		try {
 			//TODO: Non-text field support
 			const text = form.getTextField(name);
-			text.setText(data.get(name)?.toString());
+			text.setText(formData?.[name]?.toString());
 		} catch (error: unknown) {
 			console.warn(error, `Failed to handle form field ${name}`);
 		}
 	}
 
-	const pacData = {
-		dataOwner: {
-			name: data.get("Company Name")?.toString(),
-			address: {
-				street1: data.get("Address Line 1")?.toString(),
-				city: data.get("City")?.toString(),
-				state: data.get("State")?.toString(),
-				zip: data.get("Zip Code")?.toString(),
-			}
-		},
-		escrowProvider: {
-			name: "The Qlever Company, LLC",
-			address: "",
-			website: "https://www.qlever.io",
-			key: '',
-		},
-		licensePlate: {
-			header: "Certificate Information",
-			product: data.get("Product")?.toString(),
-			origin: data.get("Origin")?.toString(),
-			destination: data.get("Destination")?.toString(),
-			certificateId: data.get("CertificateId")?.toString(),
-			issueDate: new Date().toLocaleDateString(),
-		},
-	};
-
-	return { form, doc, pacData };
+	return { 
+    form,
+    doc,
+    dataOwner: { 
+      name:formData?.["Company Name"]?.toString() || ''
+    },
+    pacData: {
+      regenscore: scores
+    }
+  };
 };
 
 export type Regenscore = {
-	regenscore: number;
-	air: number;
-	water: number;
-	soil: number;
-	equity: number;
+  regenscore: {
+    regenscore: number;
+    air: number;
+    water: number;
+    soil: number;
+    equity: number;
+  }
 }

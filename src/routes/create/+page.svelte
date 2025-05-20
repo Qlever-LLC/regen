@@ -27,7 +27,7 @@
     {/if}
 
     <!-- The Form -->
-    <form method="POST" action="?" class="bg-white shadow-lg rounded-lg px-8 py-10 space-y-6">
+    <form method="POST" action="/api/create" class="bg-white shadow-lg rounded-lg px-8 py-10 space-y-6">
       <h2 class="text-2xl font-bold text-gray-800 mb-4">Create a certificate</h2>
 
       {#await getFields() then fields}

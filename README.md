@@ -12,7 +12,8 @@ openssl x509 -outform der -in cert.pem -out cert.der
 openssl x509 -in cert.pem -pubkey -noout | openssl pkey -pubin -outform DER > pubkey.der
 ```
 
-```CERT_PASS=password123 P12_CERT_PATH=./test.p12 CERT_DER=./pubkey.der deno task dev```
-
+```
+CERT_PASS=password123 P12_CERT_PATH=./test.p12 CERT_DER=./pubkey.der deno task dev
+```
 
 

@@ -4,6 +4,13 @@ import forge from "node-forge";
 import type { Action } from "@sveltejs/kit";
 import { Buffer } from "node:buffer";
 import { sha256 } from "js-sha256";
+import { createHash } from 'node:crypto';
+import jwt from 'jsonwebtoken';
+import type {
+  UnpackedSadiePAC,
+  Sadie,
+  PAC,
+} from "./types";
 
 import signpdf from "@signpdf/signpdf";
 import { P12Signer } from "@signpdf/signer-p12";
@@ -21,52 +28,121 @@ import { uploadFile } from "./drive";
 import { trustedList } from './trusted.ts';;
 
 // FIXME: How to do this the sveltekit way?
-const cert = Deno.env.get("P12_CERT_PATH");
-const der = Deno.env.get("CERT_DER");
-const passphrase = Deno.env.get("CERT_PASS");
+//const cert = Deno.env.get("P12_CERT_PATH");
+//const der = Deno.env.get("CERT_DER");
+const PLACEHOLDER = { 'SADIE': 'x'.repeat(1000) };
+const ALGORITHM = "RS256";
+const PRIVKEY = Deno.readFileSync(Deno.env.get("PRIVKEY") || '');
+const PUBKEY = Deno.readFileSync(Deno.env.get("PUBKEY") || '');
+//const passphrase = Deno.env.get("CERT_PASS");
 const CATALOG_ENTRY = "PAC"
-const DRIVE_BASE_ID = "1Zycnk_gjSeRjb9O1sN__gInSIgcOaXcv"
+//const DRIVE_BASE_ID = "1Zycnk_gjSeRjb9O1sN__gInSIgcOaXcv"
 const CATALOG_KEY = "payload"
+import { pdflibAddPlaceholder } from "@signpdf/placeholder-pdf-lib";
+
+export const handleForm = (async ({
+  request,
+}:{
+  request: Request
+}) => {
+	// Get regen form data
+  const formData = await request.formData();
+  const data : Record<string, any> = {};
+  formData.forEach((v,k) => {
+    data[k] = v.valueOf()
+  });
+  await create(data);
+})
 
 /**
  * Takes a request of form data and generates the PDF
  */
-export const create = (async ({ 
-	request,
-	fetch
-}) => {
+export const create = (async ( 
+	formData: Record<string, any>,
+) => {
 	// Get regen form data
-	const data = await request.formData();
-	const template = await fetch("/template3.pdf");
+	const template = await fetch("http://localhost:5173/template3.pdf");
 	const doc = await PDFDocument.load(await template.arrayBuffer());
 
 	// Populate the output PDF and PAC
-	const { form, pacData } = await generateRegenPDF(data, doc);
+	const { form, pacData, dataOwner } = await generateRegenPDF(formData, doc);
 
-	// @ts-expect-error fix pacData type later
-	const pac = await generatePAC(pacData);
+  const unpackedPac = {
+    sadie: {
+      pdfHash: '', // ?
+      pacHash: '',
+      quote: '', //code 
+      dataOwner,
+      escrowProvider: {
+        name: "The Qlever Company, LLC",
+        runAdditionalPACsLink: "https://www.qlever.io/escrow-provider",
+      },
+    },
+    ...pacData
+	};
 
 	form.flatten();
+
+	doc.catalog.set(
+    PDFName.of(CATALOG_ENTRY), 
+    doc.context.register(doc.context.obj(PLACEHOLDER))
+  );
+
+	const prePac = await doc.save();
+	const hash = createHash("sha256").update(prePac).digest("hex");
+
+	unpackedPac.sadie.pdfHash = hash;
+	console.log('prepac hash', hash);
+	const pac = generatePAC(unpackedPac);
+  console.log({pac})
 
 	// Now add the PAC json
 	const customData = doc.context.obj({ [CATALOG_KEY]: PDFString.of(JSON.stringify(pac)) });
 	doc.catalog.set(PDFName.of(CATALOG_ENTRY), doc.context.register(customData));
 
 	const filled = await doc.save();
+	/*
+	const docWithPlaceholder = await PDFDocument.load(filled);
+	await pdflibAddPlaceholder({
+		pdfDoc: docWithPlaceholder,
+		reason: "I am signing this doc",
+		name: "Qlever",
+		contactInfo: "info@qlever.io",
+		signatureLength: 8192,
+		location: "Qlever HQ",
+    });
+
+	const placeholderBytes = await docWithPlaceholder.save();
+
 	const signer = cert ? new P12Signer(await Deno.readFile(cert), {passphrase}) : undefined;
 
-	// TODO: Actually try to sign the PDF
-	const signed = signer ? await signpdf.default.sign(filled, signer) : filled;
+	console.log(cert ? "Signed" : "Not Signed");
+
+	const signed = signer ? await signpdf.default.sign(placeholderBytes, signer) : filled;
+	*/
 
 	// Sync to Google Drive
+  /*
 	await uploadFile({
-		filename: `RegenScoreCert-${pacData.dataOwner.name}.pdf`,
-		content: Buffer.from(signed), // or Uint8Array directly
+		filename: `RegenScoreCert-${unpackedPac.sadie.dataOwner.name}.pdf`,
+		content: Buffer.from(filled), // or Uint8Array directly
+		//content: Buffer.from(signed), // or Uint8Array directly
 		mimeType: 'application/pdf',
 		parentFolderId: DRIVE_BASE_ID,
 	});
+  */
 
-	return signed;
+  try {
+    const v = await verify(filled);
+    console.log(v);
+  } catch (error) {
+    console.error("Verification failed:", error);
+  }
+
+//	await verify(signed)
+
+	//return signed;
+	return filled;
 }) satisfies Action;
 
 export type verification = {
@@ -85,28 +161,39 @@ export type verification = {
 
 // Generic verification of the PAC
 export const verify = (async (pdfBytes: Uint8Array) => {
+
+  // Extract the pdf
+  const doc = await PDFDocument.load(pdfBytes);
+
 	//1. verify the pdf signature
-	const { signedData: pdf, signature, valid } = await extractSignatureData(pdfBytes);
+	//const { signedData: pdf, signature, valid } = await extractSignatureData(pdfBytes);
 
 	//2. extract the PAC from the PDF
-	const pac = await extractEmbeddedJSON(pdf);
+  // TODO: make/handle sadie key as JWT. for now, just use the json
+	//const sadieStr = await extractEmbeddedJSON(doc);
+  //const sadie = await decodeSadieJwt(sadieStr);
+  const pac = await extractEmbeddedJSON(doc) as unknown as PAC<Regenscore>;
+  console.log('verify pac', { pac })
 
 	const pdfContainsData = !!pac;
 	if (!pdfContainsData) return { pdfContainsData }
 
-	//3. verify the pac wasn't modified
-	const pacCopy = JSON.parse(JSON.stringify(pac));
-	// biome-ignore lint/performance/noDelete: 
-	delete pacCopy.sadie;
+  // Decode the JWT payload
+  const unpacked = jwt.verify(pac, PUBKEY, { algorithm: ALGORITHM });
+  console.log({ unpacked })
 
-	const unchanged = sha256(JSON.stringify(pacCopy)) === pac.sadie;
+  // 3. Ensure the pdf hash matches the original pdf hash
+  const originalPdf = await getOriginalPdf(doc);
+	const originalPdfHash = createHash("sha256").update(originalPdf).digest("hex");
+	const pdfHashValid = originalPdf === unpacked.sadie.pdfHash;
+  console.log({ originalPdfHash, unpackedPdfHash: unpacked.sadie.pdfHash, pdfHashValid })
 
 	//4. confirm the PAC was signed by a trusted escrow provider
-	const escrowTrusted = 
-	  Object.values(trustedList).map(v => v.key).includes(pac.escrowProvider.key);
+	//const escrowTrusted = 
+	//  Object.values(trustedList).map(v => v.key).includes(unpacked.escrowProvider.key);
 
 	return {
-		verification: {
+		verification: unpacked/*{
 			pdfContainsData,
 			pdfSigned: !!signature,
 			valid,
@@ -123,45 +210,24 @@ export const verify = (async (pdfBytes: Uint8Array) => {
 			},
 		},
 		pac
+    */
 	}
 });
 
-
-export const generatePAC = async (
-	pacData: Record<string, number>
+export const generatePAC = (
+	pacData: UnpackedSadiePAC<Regenscore>, 
 ) => {
-	
-	return {
-		...pacData,
-		sadie: sha256(JSON.stringify(pacData)),
-	}
+
+  return jwt.sign(pacData, PRIVKEY, {
+    algorithm: ALGORITHM,
+  });
 }
 
-export type PAC<T> = {
-	sadie: string;
-	dataOwner: {
-		name: string;
-		address: {
-			street1: string;
-			city: string;
-			state: string;
-			zip: string;
-		},
-		signature: string;
-	},
-	escrowProvider: {
-		name: string;
-		address: string;
-		website: string;
-		key: string;
-	},
-	pac: T; 
-}
+
 
 async function extractEmbeddedJSON(
-	pdfBytes: Uint8Array
-): Promise<PAC<Regenscore>| null> {
-  const doc = await PDFDocument.load(pdfBytes);
+  doc: PDFDocument
+): Promise<UnpackedSadiePAC<Regenscore>| null> {
   const catRef = doc.catalog.get(PDFName.of(CATALOG_ENTRY));
   
   if (!catRef) {
@@ -192,12 +258,13 @@ async function extractEmbeddedJSON(
   }
 }
 
+/*
 export async function extractSignatureData(pdfBytes: Uint8Array): Promise<{
 	signedData: Uint8Array;
 	signature: Uint8Array;
 	valid: boolean;
 }> {
-	const pdfStr = new TextDecoder("latin1").decode(pdfBytes); // latin1 preserves raw bytes
+	const pdfStr = new TextDecoder().decode(pdfBytes); // latin1 preserves raw bytes
   
 	// Extract the /ByteRange
 	const byteRangeMatch = pdfStr.match(
@@ -205,83 +272,49 @@ export async function extractSignatureData(pdfBytes: Uint8Array): Promise<{
 	);
 	if (!byteRangeMatch) throw new Error("No /ByteRange found in PDF");
   
-	const [start1, len1, start2, len2] = byteRangeMatch
+	const byteRange = byteRangeMatch
 	  .slice(1)
-	  .map((n) => Number.parseInt(n, 10));
+	  .map(Number);
+	const [start1, len1, start2, len2] = byteRange;
   
-	const signedData = new Uint8Array(
-	  len1 + len2
-	);
+	const signedData = new Uint8Array(len1 + len2);
 	signedData.set(pdfBytes.slice(start1, start1 + len1), 0);
 	signedData.set(pdfBytes.slice(start2, start2 + len2), len1);
-  
+
 	// Extract the /Contents
 	const contentsMatch = pdfStr.match(/\/Contents\s*<([0-9A-Fa-f\s]+)>/);
 	if (!contentsMatch) throw new Error("No /Contents found in PDF");
-  
-	const hex = contentsMatch[1].replace(/\s+/g, '');
-	let signature = Uint8Array.from(
-		(hex.match(/.{2}/g) || []).map((b) => Number.parseInt(b, 16))
-	);
-  
-	// Strip trailing 0-padding (optional, but common with fixed-length buffers)
-	while (signature[signature.length - 1] === 0) {
-	  signature = signature.slice(0, -1);
-	}
-  
+ 
+	// Signature hex decode
+	const hex = contentsMatch[1].replace(/\s/g, "");
+	const fullSig = new Uint8Array((hex.match(/.{2}/g) || [])
+	  .map(h => Number.parseInt(h, 16)));
+
+    let end = fullSig.length;
+	while (end > 0 && fullSig[end - 1] === 0x00) end--;
+	const signature = fullSig.slice(0, end);
+
+//	const hex = contentsMatch[1].replace(/^<|>$/g, "").trim();
+//	let signature = Uint8Array.from((hex.match(/.{1,2}/g) || []).map(b => Number.parseInt(b, 16)));
+
+	console.log('Pdf size', pdfBytes.length)
+	console.log('byterange', start1, len1, start2, len2)
+	console.log('signedData', signedData.length)
+	console.log('signature', signature.length)
+	console.log('pdfBytes minus length', pdfBytes.length - (len1 + len2))
+
+	const res = validatePKCS7Signature(signedData, signature)
+	console.log(res);
+
 	return { 
 		signedData,
 		signature, 
 		valid: await verifySignature({signedData, signature })
 	};
 }
-
-// Convert your Uint8Array signature into a Forge-readable DER buffer
-/*
-function uint8ArrayToForgeBuffer(data: Uint8Array) {
-	const binaryStr = Array.from(data)
-	  .map((b) => String.fromCharCode(b))
-	  .join('');
-	  //@ts-expect-error "Forge doesn’t publish good typings — so any type enforcement from Deno is guessing wrong."
-	return forge.util.createBuffer(binaryStr, 'binary');
-}
- 
-export function validateSignature(signedDataUint8: Uint8Array, signatureUint8: Uint8Array): boolean {
-  try {
-    // Parse CMS signature (PKCS#7)
-    const der = uint8ArrayToForgeBuffer(signatureUint8);
-    const asn1 = forge.asn1.fromDer(der);
-    const p7 = forge.pkcs7.messageFromAsn1(asn1);
-
-    // Check if signature is detached (i.e., external data was signed)
-    if (!p7.signers.length) throw new Error("No signers found in signature.");
-
-    // Convert signed content to forge buffer
-    const signedData = forge.util.createBuffer(
-		forge.util.binary.raw.encode([...signedDataUint8]),
-		'binary'
-	);
-
-    // Validate the signature (note: assumes detached mode)
-    const valid = p7.verify({
-      detached: true,
-      content: signedData
-    });
-
-    return valid;
-  } catch (e) {
-    console.error("Signature validation failed:", e);
-    return false;
-  }
-}
-
-function isSignedData(
-	obj: forge.pkcs7.PkcsEnvelopedData | forge.pkcs7.PkcsSignedData
-): obj is forge.pkcs7.PkcsSignedData {
-	return typeof (obj as any).signers !== "undefined";
-}
 */
 
+/*
 async function verifySignature({
 	signedData,
 	signature,
@@ -289,14 +322,14 @@ async function verifySignature({
 	signedData: Uint8Array;
 	signature: Uint8Array;
   }): Promise<boolean> {
-	const certificateDer = der ? await Deno.readFile(der) : undefined;
+	const pubDer = der ? await Deno.readFile(der) : undefined;
 
-	if (!certificateDer) throw new Error("Certificate not provided.");
-	console.log('CERTIFICATE DER', certificateDer)
+	if (!pubDer) throw new Error("Certificate not provided.");
+
 	// Import the certificate
-	const cert = await crypto.subtle.importKey(
+	const pubKey = await crypto.subtle.importKey(
 	  "spki", // X.509 SubjectPublicKeyInfo (public key format)
-	  certificateDer,
+	  pubDer,
 	  {
 		name: "RSASSA-PKCS1-v1_5",
 		hash: "SHA-256",
@@ -304,15 +337,13 @@ async function verifySignature({
 	  false,
 	  ["verify"]
 	);
-	console.log('IMPORTED CERTIFICATE')
   
 	// Verify the signature
 	const valid = await crypto.subtle.verify(
 	  {
 		name: "RSASSA-PKCS1-v1_5",
-		hash: "SHA-256",
 	  },
-	  cert,
+	  pubKey,
 	  signature,
 	  signedData
 	);
@@ -321,4 +352,60 @@ async function verifySignature({
   
 	return valid;
 }
-  
+*/
+
+/* 
+function validatePKCS7Signature(signedData: Uint8Array, signatureContents: Uint8Array) {
+  const p7 = forge.pkcs7.messageFromAsn1(
+    forge.asn1.fromDer(forge.util.createBuffer(String.fromCharCode(...signatureContents), 'raw'))
+  );
+
+  const certi = p7.certificates[0];
+  const sig = p7.rawCapture.signature;
+  const md = forge.md.sha256.create();
+  md.update(forge.util.createBuffer(String.fromCharCode(...signedData), 'raw').getBytes());
+
+  const verified = certi.publicKey.verify(md.digest().bytes(), sig);
+  return { verified, subject: certi.subject };
+}
+  */
+
+async function getOriginalPdf(pdfDoc: PDFDocument): Promise<Uint8Array> {
+  const copyBytes = await pdfDoc.save();
+  const copy = await PDFDocument.load(copyBytes);
+  copy.catalog.set(
+    PDFName.of(CATALOG_ENTRY), 
+    copy.context.register(copy.context.obj(PLACEHOLDER))
+  );
+  return copy.save();
+}
+
+function serializeJSON(obj: any): string {
+  if (typeof obj === 'number') {
+    const str = obj.toString();
+    if (str.match(/\./)) {
+      console.warn('You cannot serialize a floating point number with a hashing function and expect it to work consistently across all systems.  Use a string.');
+    }
+    // Otherwise, it's an int and it should serialize just fine.
+    return str;
+  }
+  if (typeof obj === 'string') return `"${obj}"`;
+  if (typeof obj === 'boolean') return (obj ? 'true' : 'false');
+  // Must be an array or object
+  const isarray = Array.isArray(obj);
+  const starttoken = isarray ? '[' : '{';
+  const endtoken = isarray ? ']' : '}';
+
+  if (!obj) return 'null';
+
+  const keys = Object.keys(obj).sort(); // you can't have two identical keys, so you don't have to worry about that.
+
+  return starttoken
+    + keys.reduce((acc,k,index) => {
+      if (!isarray) acc += `"${k}":`; // if an object, put the key name here
+      acc += serializeJSON(obj[k]);
+      if (index < keys.length-1) acc += ',';
+      return acc;
+    },"")
+    + endtoken;
+}

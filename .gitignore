@@ -16,3 +16,10 @@ node_modules/
 .vite/
 
 .svelte-kit/
+
+cert.der
+test.p12
+test.key
+test.crt
+cert.pem
+pubkey.der
