@@ -1,9 +1,11 @@
-export type UnpackedSadiePAC<T> = ({
-  sadie: Sadie,
-}) & T
+export type UnpackedSadiePAC<T> =
+  & ({
+    sadie: Sadie;
+  })
+  & T;
 
 export type PAC<T> = {
-	sadie: string;
+  sadie: string;
 } & T;
 
 export type Sadie = {
@@ -13,9 +15,9 @@ export type Sadie = {
   quote?: string;
   dataOwner: {
     name: string;
-  },
+  };
   escrowProvider: {
     name: string;
-    runAdditionalPACsLink: string,
-  },
-}
+    runAdditionalPACsLink: string;
+  };
+};

@@ -32,5 +32,3 @@ jobs:
           project: "regenscore"
           entrypoint: "build/index.js"
           root: "."
-          
-          

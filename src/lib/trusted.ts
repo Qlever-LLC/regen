@@ -1,5 +1,5 @@
 export const trustedList = {
-    'The Qlever Company, LLC': {
-        key: 'QleverKey',
-    },
-}
+  "The Qlever Company, LLC": {
+    key: "QleverKey",
+  },
+};
