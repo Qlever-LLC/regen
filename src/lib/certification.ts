@@ -18,7 +18,7 @@ import {
 	PDFName,
     PDFString
 } from 'pdf-lib';
-
+import { trustedList } from './trusted.ts';
 const PLACEHOLDER = { 'SADIE': 'x'.repeat(1000) };
 const ALGORITHM = "RS256";
 const PRIVKEY = Deno.readFileSync(Deno.env.get("PRIVKEY") || '');
@@ -68,7 +68,7 @@ export const create = (async (
       dataOwner,
       escrowProvider: {
         name: "The Qlever Company, LLC",
-        runAdditionalPACsLink: "https://www.qlever.io/escrow-provider",
+        runAdditionalPACsLink: "http://localhost:5173/escrow-provider",
       },
     },
     ...pacData
@@ -106,16 +106,10 @@ export const create = (async (
 
 export type verification = {
 	pdfContainsPAC: boolean;
-	unchanged?: boolean;
-	dataOwner?: {
-		trusted: boolean;
-	};
-	escrowProvider?: {
-		trusted: boolean;
-	};
-	code: {
-		trusted: boolean;
-	}
+	pdfUnchanged?: boolean;
+	dataOwnerTrusted?: boolean;
+	escrowProviderTrusted?: boolean;
+	codeExecutionTrusted?: boolean;
 }
 
 // Generic verification of the PAC
@@ -133,32 +127,21 @@ export const verify = (async (pdfBytes: Uint8Array) => {
 
   //3. Compute the pdf hash and validate against the pdf hash stored in the PAC
   const originalPdfHash = await getOriginalPdfHash(doc);
-	const pdfHashValid = originalPdfHash === unpacked.sadie.pdfHash;
-  console.log({ originalPdfHash, unpackedPdfHash: unpacked.sadie.pdfHash, pdfHashValid })
+	const pdfUnchanged = originalPdfHash === unpacked.sadie.pdfHash;
 
 	//4. confirm the PAC was signed by a trusted escrow provider
-	//const escrowTrusted = 
-	//  Object.values(trustedList).map(v => v.key).includes(unpacked.escrowProvider.key);
+	const escrowTrusted = 
+	  Object.keys(trustedList).includes(unpacked.sadie.escrowProvider.name);
 
 	return {
-		verification: unpacked/*{
-			pdfContainsData,
-			pdfSigned: !!signature,
-			valid,
-			unchanged,
-			dataOwner: {
-				present: !!pac.dataOwner.signature,
-				trusted: escrowTrusted, // escrow 'vouches' for data owner 
-			},
-			escrowProvider: {
-				trusted: escrowTrusted,
-			},
-			code: {
-				trusted: escrowTrusted, // escrow 'vouches' for code 
-			},
+		verification: {
+			escrowProviderTrusted: escrowTrusted,
+			dataOwnerTrusted: escrowTrusted,
+			codeExecutionTrusted: true, //TODO: enclave quote
+      pdfContainsData: true,
+      pdfUnchanged,
 		},
-		pac
-    */
+		pac: unpacked,
 	}
 });
 

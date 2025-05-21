@@ -3,38 +3,54 @@
 
   let { 
     verification = $bindable(),
-    pac = $bindable()
+    pac = $bindable(),
   } = $props();
-  let { dataOwner, escrowProvider, codeExecution } = verification;
-  console.log(verification, pac)
+  console.log({ verification, pac });
+  const { dataOwnerTrusted, escrowProviderTrusted, codeExecutionTrusted } = verification;
+  const { runAdditionalPACsLink } = pac.sadie.escrowProvider;
 </script>
-  
-<div>
-  <hr />
-  <LicensePlate pac={pac} />
-  <hr />
-  <h3>Data Owner: </h3>
-  {#if dataOwner}
-    <p>Verified!</p>
-  {:else}
-    <p>Not Verified</p>
-  {/if}
 
-  <h3>Escrow Provider:</h3>
-  {#if escrowProvider}
-    <p>Verified!</p>
-  {:else}
-    <p>Not Verified</p>
-  {/if}
+<div class="card bg-base-100 shadow-xl mt-6">
+  <div class="card-body space-y-4">
+    <div class="border-t border-base-300 pt-4">
+      <LicensePlate pac={pac} />
+    </div>
 
-  <h3>Code Execution:</h3>
-  {#if codeExecution}
-    <p>Verified!</p>
-  {:else}
-    <p>Not Verified</p>
-  {/if}
+    <div class="divider">Verification Status</div>
 
+    <div class="space-y-2">
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold">Data Owner:</h3>
+        {#if dataOwnerTrusted}
+          <span class="badge badge-success">Verified</span>
+        {:else}
+          <span class="badge badge-error">Not Verified</span>
+        {/if}
+      </div>
+
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold">Escrow Provider:</h3>
+        {#if escrowProviderTrusted}
+          <span class="badge badge-success">Verified</span>
+        {:else}
+          <span class="badge badge-error">Not Verified</span>
+        {/if}
+      </div>
+
+      <div class="flex items-center justify-between">
+        <h3 class="font-semibold">Code Execution:</h3>
+        {#if codeExecutionTrusted}
+          <span class="badge badge-success">Verified</span>
+        {:else}
+          <span class="badge badge-error">Not Verified</span>
+        {/if}
+      </div>
+    </div>
+
+    <div class="text-right">
+      <a href={runAdditionalPACsLink} class="btn btn-outline btn-primary">
+        Run Additional PACs
+      </a>
+    </div>
+  </div>
 </div>
-
-  <style>
-  </style>

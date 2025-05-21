@@ -7,10 +7,10 @@
 {#if pac}
   <div>
     <h2>Data Owner</h2>
-    {pac.dataOwner.name}
+    {pac.sadie.dataOwner.name}
 
     <h2>Escrow Provider</h2>
-    {pac.escrowProvider.name}
+    {pac.sadie.escrowProvider.name}
     
     <h2>Code Execution</h2>
   </div>

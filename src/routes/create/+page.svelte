@@ -11,7 +11,8 @@
 
   const { form } = $props();
 </script>
-<main class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+
+<main class="min-h-screen bg-base-200 py-12 px-4 sm:px-6 lg:px-8">
   <div class="max-w-2xl mx-auto">
     {#if form?.certification}
       <div class="mb-6 text-center">
@@ -19,44 +20,42 @@
           href={URL.createObjectURL(new Blob([form.certification]))}
           download="certification.pdf"
           target="_blank"
-          class="inline-block bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm"
+          class="btn btn-success"
         >
           Download Certification
         </a>
       </div>
     {/if}
 
-    <!-- The Form -->
-    <form method="POST" action="/api/create" class="bg-white shadow-lg rounded-lg px-8 py-10 space-y-6">
-      <h2 class="text-2xl font-bold text-gray-800 mb-4">Create a certificate</h2>
+    <!-- Form Card -->
+    <div class="card bg-white shadow-xl">
+      <div class="card-body">
+        <h2 class="card-title justify-center">Create a Certificate</h2>
 
-      {#await getFields() then fields}
-        {#each fields as field}
-          <div class="grid grid-cols-4 items-center gap-4">
-            <label
-              for={field.getName()}
-              class="col-span-1 text-right text-sm font-medium text-gray-700"
-            >
-              {field.getName()}
-            </label>
-            <input
-              type="text"
-              id={field.getName()}
-              name={field.getName()}
-              class="col-span-3 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+        <form method="POST" action="/api/create" class="space-y-4">
+          {#await getFields() then fields}
+            {#each fields as field}
+              <div class="form-control">
+                <label class="label" for={field.getName()}>
+                  <span class="label-text">{field.getName()}</span>
+                </label>
+                <input
+                  type="text"
+                  id={field.getName()}
+                  name={field.getName()}
+                  class="input input-bordered w-full"
+                />
+              </div>
+            {/each}
+          {/await}
+
+          <div class="card-actions justify-end mt-6">
+            <button type="submit" class="btn btn-primary">
+              Create
+            </button>
           </div>
-        {/each}
-      {/await}
-
-      <div class="text-right">
-        <button
-          type="submit"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-md shadow-sm"
-        >
-          Create
-        </button>
+        </form>
       </div>
-    </form>
+    </div>
   </div>
 </main>
