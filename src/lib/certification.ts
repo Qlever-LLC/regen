@@ -1,8 +1,10 @@
 /// <reference lib="deno.ns" />
+//
+import { createHash } from "node:crypto";
+import { Buffer } from "node:buffer";
 
 import type { Action } from "@sveltejs/kit";
-import canonicalize from "canonicalize";
-import { createHash } from "node:crypto";
+import * as canonicalize from "canonicalize";
 
 import jwt from "jsonwebtoken";
 import { pdflibAddPlaceholder } from "@signpdf/placeholder-pdf-lib";
@@ -26,6 +28,9 @@ const PUBKEY = Deno.env.has("PUBKEY") &&
 const CATALOG_ENTRY = "PAC";
 const cert = Deno.env.get("P12_CERT_PATH");
 
+// @ts-expect-error HACK: fixes jsonwebtoken
+globalThis.Buffer = Buffer;
+
 /**
  * Takes a request of form data and generates the PDF
  */
@@ -35,6 +40,7 @@ export const create = (async ({ request, fetch }) => {
   const doc = await PDFDocument.load(await template.arrayBuffer());
 
   /* FIXME: Get PDF hash inside PAC working?
+
 	doc.catalog.set
 		PDFName.of(CATALOG_ENTRY),
 		doc.context.register(doc.context.obj(PLACEHOLDER)),
@@ -152,7 +158,9 @@ export const verify = async (pdfBytes: Uint8Array) => {
 };
 
 export const generatePAC = (pacData: UnpackedSadiePAC<Regenscore>) => {
-  const canon = canonicalize.default(pacData);
+  const canon =
+    // @ts-expect-error broken types for cannonicalize
+    canonicalize.default(pacData);
   if (!canon) throw new Error("Failed to canonicalize PAC data");
   return jwt.sign(JSON.parse(canon), PRIVKEY, { algorithm: ALGORITHM });
 };

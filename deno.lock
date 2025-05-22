@@ -1,6 +1,9 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@std/assert@^1.0.13": "1.0.13",
+    "jsr:@std/internal@^1.0.6": "1.0.7",
+    "jsr:@std/testing@*": "1.0.12",
     "npm:@deno/vite-plugin@^1.0.4": "1.0.4_vite@6.3.5__@types+node@22.15.21__picomatch@4.0.2_@types+node@22.15.21",
     "npm:@qlever-llc/svelte-adapter-deno@^1.0.1": "1.0.1_@sveltejs+kit@2.21.1__@sveltejs+vite-plugin-svelte@5.0.3___svelte@5.33.0____acorn@8.14.1___vite@6.3.5____@types+node@22.15.21____picomatch@4.0.2___@types+node@22.15.21__svelte@5.33.0___acorn@8.14.1__vite@6.3.5___@types+node@22.15.21___picomatch@4.0.2__acorn@8.14.1__@types+node@22.15.21_rollup@4.41.0_@sveltejs+vite-plugin-svelte@5.0.3__svelte@5.33.0___acorn@8.14.1__vite@6.3.5___@types+node@22.15.21___picomatch@4.0.2__@types+node@22.15.21_svelte@5.33.0__acorn@8.14.1_vite@6.3.5__@types+node@22.15.21__picomatch@4.0.2_@types+node@22.15.21",
     "npm:@qlever-llc/verify-pdf@2": "2.0.0",
@@ -25,6 +28,23 @@
     "npm:tailwindcss@^4.1.7": "4.1.7",
     "npm:vite@6.3.5": "6.3.5_@types+node@22.15.21_picomatch@4.0.2",
     "npm:vite@^6.3.5": "6.3.5_@types+node@22.15.21_picomatch@4.0.2"
+  },
+  "jsr": {
+    "@std/assert@1.0.13": {
+      "integrity": "ae0d31e41919b12c656c742b22522c32fb26ed0cba32975cb0de2a273cb68b29",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
+    },
+    "@std/internal@1.0.7": {
+      "integrity": "39eeb5265190a7bc5d5591c9ff019490bd1f2c3907c044a11b0d545796158a0f"
+    },
+    "@std/testing@1.0.12": {
+      "integrity": "fec973a45ccc62c540fb89296199051fee142409138fd6e3eae409366bcd4720",
+      "dependencies": [
+        "jsr:@std/assert"
+      ]
+    }
   },
   "npm": {
     "@alloc/quick-lru@5.2.0": {

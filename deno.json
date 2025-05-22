@@ -14,7 +14,10 @@
     }
   },
   "imports": {
-    "crypto": "node:crypto"
+    "buffer": "node:buffer",
+    "crypto": "node:crypto",
+    "stream": "node:stream",
+    "util": "node:util"
   },
   "nodeModulesDir": "auto",
   "compilerOptions": {
