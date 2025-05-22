@@ -1,13 +1,15 @@
 /// <reference lib="deno.ns" />
 
 import type { Action } from "@sveltejs/kit";
+import canonicalize from 'canonicalize';
 import { createHash } from "node:crypto";
 import jwt from "jsonwebtoken";
 import type { PAC, UnpackedSadiePAC } from "./types";
-
 import { generateRegenPDF, type Regenscore } from "./regen";
 import { PDFDict, PDFDocument, PDFName, PDFString } from "pdf-lib";
 import { trustedList } from "./trusted.ts";
+//import { uploadFile } from "./drive.ts";
+//import { Buffer } from 'node:buffer';
 const PLACEHOLDER = { "SADIE": "x".repeat(1000) };
 const ALGORITHM = "RS256";
 const PRIVKEY = Deno.readFileSync(Deno.env.get("PRIVKEY") || "");
@@ -26,7 +28,7 @@ export const handleForm = async ({
   formData.forEach((v, k) => {
     data[k] = v.valueOf();
   });
-  await create(data);
+  return create(data);
 };
 
 /**
@@ -86,12 +88,6 @@ export const create = (async (
 	});
   */
 
-  try {
-    const v = await verify(filled);
-  } catch (error) {
-    console.error("Verification failed:", error);
-  }
-
   return filled;
 }) satisfies Action;
 
@@ -109,7 +105,7 @@ export const verify = async (pdfBytes: Uint8Array) => {
   const doc = await PDFDocument.load(pdfBytes);
 
   //1. Extract the PAC from the PDF
-  const pac = await extractEmbeddedJSON(doc) as unknown as PAC<Regenscore>;
+  const pac = extractEmbeddedJSON(doc) as unknown as PAC<Regenscore>;
   const pdfContainsData = !!pac;
   if (!pdfContainsData) return { pdfContainsData };
 
@@ -139,11 +135,15 @@ export const verify = async (pdfBytes: Uint8Array) => {
 
 export const generatePAC = (
   pacData: UnpackedSadiePAC<Regenscore>,
-) => jwt.sign(pacData, PRIVKEY, { algorithm: ALGORITHM });
+) => {
+  const canon = canonicalize.default(pacData);
+  if (!canon) throw new Error('Failed to canonicalize PAC data');
+  return jwt.sign(JSON.parse(canon), PRIVKEY, { algorithm: ALGORITHM});
+}
 
-async function extractEmbeddedJSON(
+function extractEmbeddedJSON(
   doc: PDFDocument,
-): Promise<UnpackedSadiePAC<Regenscore> | null> {
+): UnpackedSadiePAC<Regenscore> | null {
   const catRef = doc.catalog.get(PDFName.of(CATALOG_ENTRY));
 
   if (!catRef) {

@@ -31,7 +31,7 @@ export const generateRegenPDF = async (
     try {
       //TODO: Non-text field support
       const text = form.getTextField(name);
-      text.setText(formData?.[name]?.toString());
+      text.setText(formData?.[name]);
     } catch (error: unknown) {
       console.warn(error, `Failed to handle form field ${name}`);
     }

@@ -5,7 +5,7 @@ import type { Buffer } from "node:buffer";
 //import { contentType } from "https://deno.land/std@0.224.0/media_types/mod.ts";
 
 const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
-const CREDENTIALS_PATH = "./regenscore-459818-184b284bfcd6.json";
+const CREDENTIALS_PATH = "./regenscore-459818-feae1a7b7bb2.json";
 
 type UploadInput = {
   filename: string;

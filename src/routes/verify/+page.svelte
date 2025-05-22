@@ -6,7 +6,11 @@
     verification,
     pac
   } = $state({verification: undefined, pac: undefined});
-  console.log(verification, pac);
+
+  const pacTypes = [
+    "IFPA Shelf Life Prediction V1",
+    "Country of Origin Verification V1",
+  ]
 </script>
 
 <main class="min-h-screen bg-base-200 flex items-center justify-center px-4 py-12">
@@ -23,6 +27,16 @@
       <div class="card shadow-xl bg-base-100">
         <div class="card-body">
           <Dropzone bind:verification={verification} bind:pac={pac} />
+        </div>
+        <div class="card bg-base-100 shadow-md mt-6">
+          <div class="card-body space-y-4">
+            <h3 class="card-title text-lg text-primary">PACs We Can Verify:</h3>
+            <div class="grid gap-2">
+              {#each pacTypes as type}
+                <a href="#" class="btn btn-outline btn-primary w-full">{type}</a>
+              {/each}
+            </div>
+          </div>
         </div>
       </div>
     {/if}
