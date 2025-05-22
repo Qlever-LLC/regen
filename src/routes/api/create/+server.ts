@@ -2,10 +2,10 @@
 
 import type { RequestHandler } from "@sveltejs/kit";
 
-import { handleForm } from "../../../lib/certification.ts";
+import { create } from "../../../lib/certification.ts";
 
 export const POST: RequestHandler = async (ctx) => {
-  const certification = await handleForm(ctx);
+  const certification = await create(ctx);
   return new Response(certification, {
     status: 201,
     headers: {

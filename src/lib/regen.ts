@@ -1,25 +1,16 @@
-import type { PDFDocument, PDFForm } from "pdf-lib";
-import type { Sadie } from "./types.ts";
+import type { PDFDocument } from "pdf-lib";
 
-export const computeScore = (formData: Record<string, any>) => {
+export const computeScore = (formData: FormData) => {
   return {
-    regenscore: formData?.["Regen Score"] as unknown as number,
-    air: formData?.["Air Score"] as unknown as number,
-    water: formData?.["Water Score"] as unknown as number,
-    soil: formData?.["Soil Score"] as unknown as number,
-    equity: formData?.["Equity Score"] as unknown as number,
+    regenscore: Number(formData.get("Regen Score")),
+    air: Number(formData.get("Air Score")),
+    water: Number(formData.get("Water Score")),
+    soil: Number(formData.get("Soil Score")),
+    equity: Number(formData.get("Equity Score")),
   };
 };
 
-export const generateRegenPDF = async (
-  formData: Record<string, any>,
-  doc: PDFDocument,
-): Promise<{
-  pacData: Regenscore;
-  dataOwner: Sadie["dataOwner"];
-  form: PDFForm;
-  doc: PDFDocument;
-}> => {
+export const generateRegenPDF = (formData: FormData, doc: PDFDocument) => {
   // Compute a score from the form
   const scores = computeScore(formData);
 
@@ -31,17 +22,17 @@ export const generateRegenPDF = async (
     try {
       //TODO: Non-text field support
       const text = form.getTextField(name);
-      text.setText(formData?.[name]);
+      text.setText(formData.get(name)?.toString());
     } catch (error: unknown) {
       console.warn(error, `Failed to handle form field ${name}`);
     }
   }
 
+  form.flatten();
   return {
-    form,
     doc,
     dataOwner: {
-      name: formData?.["Company Name"]?.toString() || "",
+      name: formData.get("Company Name")?.toString() ?? "",
     },
     pacData: {
       regenscore: scores,
@@ -49,7 +40,7 @@ export const generateRegenPDF = async (
   };
 };
 
-export type Regenscore = {
+export interface Regenscore {
   regenscore: {
     regenscore: number;
     air: number;
@@ -57,4 +48,4 @@ export type Regenscore = {
     soil: number;
     equity: number;
   };
-};
+}
