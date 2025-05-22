@@ -1,17 +1,21 @@
-Generate the private key:
+# [Generate Self-Signed p12][p12]
 
-```
-openssl genpkey -algorithm RSA -out private_key.pem -pkeyopt rsa_keygen_bits:2048
-```
+Generate private key and cert
 
-Extract the public key:
-
-```
-openssl pkey -in private_key.pem -pubout -out public_key.pem
+```sh
+openssl req -x509 -newkey rsa:4096 -keyout myKey.pem -out cert.pem -days 365 -nodes
 ```
 
-Run the test:
+Create PKCS12 file
 
+```sh
+openssl pkcs12 -export -out keyStore.p12 -inkey myKey.pem -in cert.pem
 ```
-PUBKEY=./public_key.pem PRIVKEY=./private_key.pem --allow-env --allow-read --allow-net deno test ./test/certification.ts
+
+# Run tests using generated p12
+
+```sh
+P12_CERT_PATH=./keyStore.p12 CERT_PASSWORD= --allow-env --allow-read --allow-net deno test
 ```
+
+[p12]: https://serverfault.com/questions/831394/how-can-i-create-a-pkcs12-file-using-openssl-self-signed-certs "self-sign p12"
