@@ -1,26 +1,26 @@
 {
-	"version": "0.0.1",
-	"exclude": [".svelte-kit", "node_modules", ".vite", "build"],
-	"tasks": {
-		"dev": "vite dev",
-		"build": "vite build",
-		"preview": "vite preview",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
-	},
-	"lint": {
-		"rules": {
-			"exclude": ["no-sloppy-imports"]
-		}
-	},
-	"imports": {
-		"crypto": "node:crypto"
-	},
-	"nodeModulesDir": "auto",
-	"compilerOptions": {
-		"checkJs": true,
-		"strict": true,
-		"lib": ["dom", "esnext"]
-	},
-	"unstable": ["sloppy-imports", "lazy-dynamic-imports"]
+  "version": "0.0.1",
+  "exclude": [".svelte-kit", "node_modules", ".vite", "build"],
+  "tasks": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+  },
+  "lint": {
+    "rules": {
+      "exclude": ["no-sloppy-imports"]
+    }
+  },
+  "imports": {
+    "crypto": "node:crypto"
+  },
+  "nodeModulesDir": "auto",
+  "compilerOptions": {
+    "checkJs": true,
+    "strict": true,
+    "lib": ["dom", "esnext"]
+  },
+  "unstable": ["sloppy-imports", "lazy-dynamic-imports"]
 }
