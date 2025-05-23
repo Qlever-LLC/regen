@@ -3,10 +3,16 @@
 import { Buffer } from "node:buffer";
 
 import forge from "node-forge";
+import { createPrivateKey } from "node:crypto";
+import { createPublicKey } from "node:crypto";
 
 const CERT_PATH = Deno.env.get("P12_CERT_PATH");
 
-const PASSWORD = Deno.env.get("CERT_PASSWORD");
+/**
+ * Password/passphrase for certificate
+ * @default ""
+ */
+export const PASSWORD = Deno.env.get("CERT_PASSWORD") ?? "";
 
 const asn1 = CERT_PATH
   ? forge.asn1.fromDer(
@@ -18,7 +24,10 @@ const asn1 = CERT_PATH
 /**
  * Entire pkcs12 cert
  */
-export const CERT = forge.asn1.toDer(asn1).getBytes();
+export const CERT = Buffer.from(
+  forge.asn1.toDer(asn1).getBytes(),
+  "binary",
+).toString("base64url");
 
 const p12 = forge.pkcs12.pkcs12FromAsn1(asn1, false, PASSWORD);
 
@@ -32,15 +41,17 @@ const certBags = p12.getBags({ bagType: forge.pki.oids.certBag })[
   forge.pki.oids.certBag
 ];
 
+const privKey = shroudedKeyBags?.[0]?.key ?? keyBags![0].key!; // forge.pki.privateKeyFromAsn1(keys.asn1);
 /**
  * Private key
  */
-export const PRIVKEY = shroudedKeyBags?.[0]?.key ?? keyBags![0].key!; // forge.pki.privateKeyFromAsn1(keys.asn1);
+export const PRIVKEY = createPrivateKey(forge.pki.privateKeyToPem(privKey));
 
+export const pubKey = certBags![0].cert!.publicKey; // forge.pki.publicKeyFromAsn1(asn1);
 /**
  * Public key
  */
-export const PUBKEY = certBags![0].cert!.publicKey; // forge.pki.publicKeyFromAsn1(asn1);
+export const PUBKEY = createPublicKey(forge.pki.publicKeyToPem(pubKey)); // forge.pki.publicKeyFromAsn1(asn1);
 
 interface CertInfo {
   subjectAttrs?: forge.pki.CertificateField[];

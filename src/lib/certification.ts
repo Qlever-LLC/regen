@@ -4,14 +4,14 @@ import { createHash } from "node:crypto";
 import { Buffer } from "node:buffer";
 
 import type { Action } from "@sveltejs/kit";
-import * as canonicalize from "canonicalize";
+import _canonicalize from "canonicalize";
 
 import jwt from "jsonwebtoken";
 import { pdflibAddPlaceholder } from "@signpdf/placeholder-pdf-lib";
 import signpdf from "@signpdf/signpdf";
 import { P12Signer } from "@signpdf/signer-p12";
 
-import { CERT, PRIVKEY, PUBKEY } from "./p12";
+import { CERT, PASSWORD, PRIVKEY, PUBKEY } from "./p12";
 
 import type { PAC, UnpackedSadiePAC } from "./types";
 import { generateRegenPDF, type Regenscore } from "./regen";
@@ -19,6 +19,9 @@ import { PDFDict, PDFDocument, PDFName, PDFString } from "pdf-lib";
 import { trustedList } from "./trusted.ts";
 //import { uploadFile } from "./drive.ts";
 //import { Buffer } from 'node:buffer';
+
+// broken types for cannonicalize
+const canonicalize = _canonicalize as unknown as typeof _canonicalize.default;
 
 // FIXME: Sveltekit way to get from env?
 const PLACEHOLDER = { SADIE: "x".repeat(1000) };
@@ -102,7 +105,9 @@ export async function signPdf(pdfBytes: Uint8Array) {
   });
   const toSign = await pdfDoc.save();
 
-  const signer = new P12Signer(CERT);
+  const signer = new P12Signer(CERT, {
+    passphrase: PASSWORD,
+  });
 
   // TODO: Get PDF to show as "certified" in PDF readers
   return signer ? await signpdf.default.sign(toSign, signer) : toSign;
@@ -124,13 +129,17 @@ export const verify = async (pdfBytes: Uint8Array) => {
   const doc = await PDFDocument.load(pdfBytes);
 
   //1. Extract the PAC from the PDF
-  const pac = extractEmbeddedJSON(doc) as unknown as PAC<Regenscore>;
+  const pac = extractEmbeddedJSON(doc);
   const pdfContainsData = !!pac;
-  if (!pdfContainsData) return { pdfContainsData };
+  if (!pdfContainsData) {
+    return { pdfContainsData };
+  }
 
   //const DRIVE_BASE_ID = "1Zycnk_gjSeRjb9O1sN__gInSIgcOaXcv"
   //2. Extract the PAC JSON payload (i.e., decode the JWT)
-  const unpacked = jwt.verify(pac, PUBKEY, { algorithm: ALGORITHM });
+  const unpacked = jwt.verify(pac, PUBKEY, {
+    algorithms: [ALGORITHM],
+  }) as unknown as UnpackedSadiePAC<Regenscore>;
 
   //3. Compute the pdf hash and validate against the pdf hash stored in the PAC
   const originalPdfHash = await getOriginalPdfHash(doc);
@@ -150,21 +159,19 @@ export const verify = async (pdfBytes: Uint8Array) => {
       pdfContainsData: true,
       pdfUnchanged,
     },
-    pac: unpacked,
+    pac: unpacked as unknown as PAC<Regenscore>,
   };
 };
 
 export const generatePAC = (pacData: UnpackedSadiePAC<Regenscore>) => {
-  const canon =
-    // @ts-expect-error broken types for cannonicalize
-    canonicalize.default(pacData);
-  if (!canon) throw new Error("Failed to canonicalize PAC data");
+  const canon = canonicalize(pacData);
+  if (!canon) {
+    throw new TypeError("Failed to canonicalize PAC data");
+  }
   return jwt.sign(JSON.parse(canon), PRIVKEY, { algorithm: ALGORITHM });
 };
 
-function extractEmbeddedJSON(
-  doc: PDFDocument,
-): UnpackedSadiePAC<Regenscore> | null {
+function extractEmbeddedJSON(doc: PDFDocument) {
   const catRef = doc.catalog.get(PDFName.of(CATALOG_ENTRY));
 
   if (!catRef) {
@@ -188,9 +195,10 @@ function extractEmbeddedJSON(
 
   try {
     const jsonString = pacData.decodeText();
-    return JSON.parse(jsonString);
-  } catch (e) {
-    console.error("Failed to parse embedded JSON:", e);
+    return jsonString;
+    //return JSON.parse(jsonString);
+  } catch (error: unknown) {
+    console.error(error, "Failed to parse embedded JSON");
     return null;
   }
 }
