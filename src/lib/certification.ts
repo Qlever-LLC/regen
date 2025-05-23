@@ -145,7 +145,8 @@ export const verify = async (pdfBytes: Uint8Array) => {
     verification: {
       escrowProviderTrusted: escrowTrusted,
       dataOwnerTrusted: escrowTrusted,
-      codeExecutionTrusted: true, //TODO: enclave quote
+      // TODO: enclave quote
+      codeExecutionTrusted: true,
       pdfContainsData: true,
       pdfUnchanged,
     },
