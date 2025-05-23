@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import type { Action } from "@sveltejs/kit";
 import _canonicalize from "canonicalize";
 
+import verifyPDF from "@qlever-llc/verify-pdf";
 import { pdflibAddPlaceholder } from "@signpdf/placeholder-pdf-lib";
 import { P12Signer } from "@signpdf/signer-p12";
 import signpdf from "@signpdf/signpdf";
@@ -20,7 +21,7 @@ import type { PAC, UnpackedSadiePAC } from "./types";
 //import { uploadFile } from "./drive.ts";
 //import { Buffer } from 'node:buffer';
 
-// broken types for cannonicalize
+// HACK: broken types for cannonicalize
 const canonicalize = _canonicalize as unknown as typeof _canonicalize.default;
 
 // FIXME: Sveltekit way to get from env?
@@ -32,7 +33,7 @@ const CATALOG_ENTRY = "PAC";
 globalThis.Buffer = Buffer;
 
 /**
- * Takes a request of form data and generates the PDF
+ * Takes a request of form data and generates the PDF/PAC
  */
 export const create = (async ({ request, fetch }) => {
   // Get regen form data
@@ -122,9 +123,31 @@ export interface verification {
 }
 
 /**
- * Generic verification of the PAC
+ * Generic verification of the PDF/PAC
  */
-export const verify = async (pdfBytes: Uint8Array) => {
+export const verify = (async ({ request }) => {
+  // Read the raw PDF bytes
+  const pdfBytes = new Uint8Array(await request.arrayBuffer());
+
+  // Check both things in parallel
+  const [pacResult, pdfResult] = await Promise.all([
+    verifyPac(pdfBytes),
+    verifyPDF(pdfBytes),
+  ]);
+
+  return {
+    ...pacResult,
+    verification: {
+      ...pacResult.verification,
+      pdfUnchanged: pdfResult.verified,
+    },
+  };
+}) satisfies Action;
+
+/**
+ * verification of a PAC inside the PDF
+ */
+export const verifyPac = async (pdfBytes: Uint8Array) => {
   // Load the pdf
   const doc = await PDFDocument.load(pdfBytes);
 
