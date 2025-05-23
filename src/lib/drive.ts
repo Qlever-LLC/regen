@@ -1,18 +1,18 @@
-import fs from "node:fs";
-import { google } from "googleapis";
-import { Readable } from "node:stream";
 import type { Buffer } from "node:buffer";
+import fs from "node:fs";
+import { Readable } from "node:stream";
+import { google } from "googleapis";
 //import { contentType } from "https://deno.land/std@0.224.0/media_types/mod.ts";
 
 const SCOPES = ["https://www.googleapis.com/auth/drive.file"];
 const CREDENTIALS_PATH = "./regenscore-459818-feae1a7b7bb2.json";
 
-type UploadInput = {
+interface UploadInput {
   filename: string;
   mimeType?: string;
   content: string | Buffer | Readable; // string = filepath
   parentFolderId?: string;
-};
+}
 
 const auth = new google.auth.GoogleAuth({
   keyFile: CREDENTIALS_PATH,
@@ -36,7 +36,7 @@ export async function uploadFile({
     ? content
     : Readable.from(content); // turn Buffer into Readable
 
-  const fileMetadata: any = { name: filename };
+  const fileMetadata: Record<string, unknown> = { name: filename };
   if (parentFolderId) {
     fileMetadata.parents = [parentFolderId];
   }

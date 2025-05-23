@@ -1,19 +1,20 @@
 <script lang="ts">
-  import LicensePlate from './LicensePlate.svelte';
+  import LicensePlate from "./LicensePlate.svelte";
 
-  let { 
+  let {
     verification = $bindable(),
     pac = $bindable(),
   } = $props();
   console.log({ verification, pac });
-  const { dataOwnerTrusted, escrowProviderTrusted, codeExecutionTrusted } = verification;
+  const { dataOwnerTrusted, escrowProviderTrusted, codeExecutionTrusted } =
+    verification;
   const { runAdditionalPACsLink } = pac.sadie.escrowProvider;
 </script>
 
 <div class="card bg-base-100 shadow-xl mt-6">
   <div class="card-body space-y-4">
     <div class="border-t border-base-300 pt-4">
-      <LicensePlate pac={pac} />
+      <LicensePlate {pac} />
     </div>
 
     <div class="divider">Verification Status</div>

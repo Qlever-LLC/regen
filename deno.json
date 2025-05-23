@@ -10,6 +10,7 @@
   },
   "lint": {
     "rules": {
+      "tags": [],
       "exclude": ["no-sloppy-imports"]
     }
   },

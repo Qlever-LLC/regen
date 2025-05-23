@@ -1,5 +1,5 @@
 <script lang="ts">
-  let {
+  const {
     pac = $bindable()
   } = $props();
 </script>

@@ -1,10 +1,10 @@
 /// <reference lib="deno.ns" />
 
-import { returnsNext, stub } from "jsr:@std/testing/mock";
 import { Buffer } from "node:buffer";
+import { returnsNext, stub } from "jsr:@std/testing/mock";
 
-import { create } from "../src/lib/certification.ts";
 import type { RequestEvent } from "@sveltejs/kit";
+import { create } from "../src/lib/certification.ts";
 
 Deno.test("test certification", async () => {
   const testdata: Record<string, string> = {

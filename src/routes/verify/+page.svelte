@@ -2,7 +2,7 @@
   import Dropzone from "$lib/components/Dropzone.svelte";
   import Verification from "$lib/components/Verification.svelte";
 
-  let { 
+  const { 
     verification,
     pac
   } = $state({verification: undefined, pac: undefined});

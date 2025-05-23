@@ -1,22 +1,22 @@
 /// <reference lib="deno.ns" />
 
-import { createHash } from "node:crypto";
 import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
 
 import type { Action } from "@sveltejs/kit";
 import _canonicalize from "canonicalize";
 
-import jwt from "jsonwebtoken";
 import { pdflibAddPlaceholder } from "@signpdf/placeholder-pdf-lib";
-import signpdf from "@signpdf/signpdf";
 import { P12Signer } from "@signpdf/signer-p12";
+import signpdf from "@signpdf/signpdf";
+import jwt from "jsonwebtoken";
+import { PDFDict, PDFDocument, PDFName, PDFString } from "pdf-lib";
 
 import { CERT, PASSWORD, PRIVKEY, PUBKEY } from "./p12";
-
-import type { PAC, UnpackedSadiePAC } from "./types";
-import { generateRegenPDF, type Regenscore } from "./regen";
-import { PDFDict, PDFDocument, PDFName, PDFString } from "pdf-lib";
+// deno-fmt-ignore
+import { type Regenscore, generateRegenPDF } from "./regen";
 import { trustedList } from "./trusted.ts";
+import type { PAC, UnpackedSadiePAC } from "./types";
 //import { uploadFile } from "./drive.ts";
 //import { Buffer } from 'node:buffer';
 
