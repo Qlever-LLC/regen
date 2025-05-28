@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import type { Action } from "@sveltejs/kit";
 import _canonicalize from "canonicalize";
 
-import verifyPDF from "@qlever-llc/verify-pdf";
+import { verifyPDF } from "@qlever-llc/verify-pdf";
 import { pdflibAddPlaceholder } from "@signpdf/placeholder-pdf-lib";
 import { P12Signer } from "@signpdf/signer-p12";
 import signpdf from "@signpdf/signpdf";
@@ -73,7 +73,7 @@ export const create = (async ({ request, fetch }) => {
 
   // Now add the PAC json
   const customData = doc.context.obj({
-    [CATALOG_ENTRY]: PDFString.of(JSON.stringify(pac)),
+    [CATALOG_ENTRY]: PDFString.of(pac),
   });
   doc.catalog.set(PDFName.of(CATALOG_ENTRY), doc.context.register(customData));
 
@@ -111,7 +111,9 @@ export async function signPdf(pdfBytes: Uint8Array) {
   });
 
   // TODO: Get PDF to show as "certified" in PDF readers
-  return signer ? await signpdf.default.sign(toSign, signer) : toSign;
+  return signer
+    ? await signpdf.default.sign(toSign, signer, new Date())
+    : toSign;
 }
 
 export interface verification {
@@ -191,7 +193,7 @@ export const generatePAC = (pacData: UnpackedSadiePAC<Regenscore>) => {
   if (!canon) {
     throw new TypeError("Failed to canonicalize PAC data");
   }
-  return jwt.sign(JSON.parse(canon), PRIVKEY, { algorithm: ALGORITHM });
+  return jwt.sign(canon, PRIVKEY, { algorithm: ALGORITHM });
 };
 
 function extractEmbeddedJSON(doc: PDFDocument) {

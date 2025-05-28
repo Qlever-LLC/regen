@@ -1,8 +1,9 @@
 /// <reference lib="deno.ns" />
 
 import { Buffer } from "node:buffer";
-
 import { createPrivateKey, createPublicKey } from "node:crypto";
+
+import { caStore } from "@qlever-llc/verify-pdf/certificateAuthorities";
 import forge from "node-forge";
 
 const CERT_PATH = Deno.env.get("P12_CERT_PATH");
@@ -39,16 +40,24 @@ const certBags = p12.getBags({ bagType: forge.pki.oids.certBag })[
 
 const privKey = shroudedKeyBags?.[0]?.key; // forge.pki.privateKeyFromAsn1(keys.asn1);
 if (!privKey) {
-  throw new Error("Failed to load private key!");
+  throw new TypeError("Failed to load private key!");
 }
 /**
  * Private key
  */
 export const PRIVKEY = createPrivateKey(forge.pki.privateKeyToPem(privKey));
 
-export const pubKey = certBags?.[0].cert?.publicKey; // forge.pki.publicKeyFromAsn1(asn1);
+const cert = certBags?.[0].cert;
+if (!cert) {
+  throw new TypeError("Failed to load cert");
+}
+// Add our own cert to our CA store
+// FIXME: Add env to enable this and/or check for self-signed cert
+caStore.addCertificate(cert);
+
+export const pubKey = cert.publicKey; // forge.pki.publicKeyFromAsn1(asn1);
 if (!pubKey) {
-  throw new Error("Failed to load public key!");
+  throw new TypeError("Failed to load public key!");
 }
 /**
  * Public key
@@ -60,8 +69,16 @@ interface CertInfo {
   issuerAttrs?: forge.pki.CertificateField[];
   serialNumber?: string;
   password?: string;
+  /** @default `new Date()` */
   notBefore?: Date;
+  /** @default 1 year after `notBefore` */
   notAfter?: Date;
+}
+
+function addYear(date: Date) {
+  const after = new Date(date);
+  after.setFullYear(after.getFullYear() + 1);
+  return after;
 }
 
 /**
@@ -73,7 +90,7 @@ function createSelfSignedCert({
   serialNumber,
   password,
   notBefore = new Date(),
-  notAfter,
+  notAfter = addYear(notBefore),
 }: CertInfo) {
   console.warn("Generating self-signed certificate");
 
@@ -84,9 +101,7 @@ function createSelfSignedCert({
     cert.serialNumber = serialNumber;
   }
   cert.validity.notBefore = notBefore;
-  if (notAfter) {
-    cert.validity.notAfter = notAfter;
-  }
+  cert.validity.notAfter = notAfter;
   if (subjectAttrs) {
     cert.setSubject(subjectAttrs);
   }

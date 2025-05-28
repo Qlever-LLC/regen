@@ -1,6 +1,7 @@
 /// <reference lib="deno.ns" />
 
 import { Buffer } from "node:buffer";
+import { assert, assertEquals } from "jsr:@std/assert";
 import { returnsNext, stub } from "jsr:@std/testing/mock";
 
 import type { RequestEvent } from "@sveltejs/kit";
@@ -67,7 +68,17 @@ Deno.test("certification creation/validation", async (test) => {
       () => certificateP.then((buffer) => Buffer.from(buffer).buffer),
     );
 
-    const verified = await verify(event as RequestEvent);
-    console.dir(verified);
+    const { verification, pac } = await verify(event as RequestEvent);
+
+    assertEquals(verification, {
+      escrowProviderTrusted: true,
+      dataOwnerTrusted: true,
+      codeExecutionTrusted: true,
+      pdfContainsData: true,
+      pdfUnchanged: true,
+    });
+
+    // FIXME: Check PAC structure?
+    assert(pac);
   });
 });
