@@ -9,7 +9,7 @@ import _canonicalize from "canonicalize";
 import { verifyPDF } from "@qlever-llc/verify-pdf";
 import { pdflibAddPlaceholder } from "@signpdf/placeholder-pdf-lib";
 import { P12Signer } from "@signpdf/signer-p12";
-import signpdf from "@signpdf/signpdf";
+import _signpdf from "@signpdf/signpdf";
 import jwt from "jsonwebtoken";
 import { PDFDict, PDFDocument, PDFName, PDFString } from "pdf-lib";
 
@@ -17,12 +17,14 @@ import { CERT, PASSWORD, PRIVKEY, PUBKEY } from "./p12";
 // deno-fmt-ignore
 import { type Regenscore, generateRegenPDF } from "./regen";
 import { trustedList } from "./trusted.ts";
-import type { PAC, UnpackedSadiePAC } from "./types";
+import type { UnpackedSadiePAC } from "./types";
 //import { uploadFile } from "./drive.ts";
 //import { Buffer } from 'node:buffer';
 
 // HACK: broken types for cannonicalize
 const canonicalize = _canonicalize as unknown as typeof _canonicalize.default;
+// HACK: broken types for signpdf
+const signpdf = _signpdf as unknown as typeof _signpdf.default;
 
 // FIXME: Sveltekit way to get from env?
 const PLACEHOLDER = { SADIE: "x".repeat(1000) };
@@ -111,17 +113,7 @@ export async function signPdf(pdfBytes: Uint8Array) {
   });
 
   // TODO: Get PDF to show as "certified" in PDF readers
-  return signer
-    ? await signpdf.default.sign(toSign, signer, new Date())
-    : toSign;
-}
-
-export interface verification {
-  pdfContainsPAC: boolean;
-  pdfUnchanged?: boolean;
-  dataOwnerTrusted?: boolean;
-  escrowProviderTrusted?: boolean;
-  codeExecutionTrusted?: boolean;
+  return signer ? await signpdf.sign(toSign, signer, new Date()) : toSign;
 }
 
 /**
@@ -179,7 +171,7 @@ export const verifyPac = async <T = Regenscore>(
     //2. Extract the PAC JSON payload (i.e., decode the JWT)
     const unpacked = jwt.verify(pac, PUBKEY, {
       algorithms: [ALGORITHM],
-    }) as unknown as UnpackedSadiePAC<Regenscore>;
+    }) as unknown as UnpackedSadiePAC<T>;
 
     //3. Compute the pdf hash and validate against the pdf hash stored in the PAC
     const originalPdfHash = await getOriginalPdfHash(doc);
@@ -199,7 +191,7 @@ export const verifyPac = async <T = Regenscore>(
         pdfContainsData,
         pdfUnchanged,
       },
-      pac: unpacked as unknown as UnpackedSadiePAC<T>,
+      pac: unpacked,
     };
   } catch (error: unknown) {
     console.warn(error, "Failed to verify PAC");

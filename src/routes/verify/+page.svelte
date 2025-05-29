@@ -1,11 +1,19 @@
 <script lang="ts">
+  import type { PACVerification } from "$lib/certification";
   import Dropzone from "$lib/components/Dropzone.svelte";
   import Verification from "$lib/components/Verification.svelte";
+  import type { Regenscore } from "$lib/regen";
+  import type { UnpackedSadiePAC } from "$lib/types";
+
+  interface Props {
+    verification?: PACVerification;
+    pac?: UnpackedSadiePAC<Regenscore>;
+  }
 
   let {
     verification,
     pac,
-  } = $state({ verification: undefined, pac: undefined });
+  }: Props = $state({ verification: undefined, pac: undefined });
 
   const pacTypes = [
     "IFPA Shelf Life Prediction V1",
