@@ -146,10 +146,20 @@ export const verify = (async ({ request }) => {
   };
 }) satisfies Action;
 
+export interface PACVerification {
+  pdfContainsData: boolean;
+  escrowProviderTrusted?: boolean;
+  dataOwnerTrusted?: boolean;
+  codeExecutionTrusted?: boolean;
+  pdfUnchanged?: boolean;
+}
+
 /**
  * verification of a PAC inside the PDF
  */
-export const verifyPac = async (pdfBytes: Uint8Array) => {
+export const verifyPac = async <T = Regenscore>(
+  pdfBytes: Uint8Array,
+): Promise<{ verification: PACVerification; pac?: UnpackedSadiePAC<T> }> => {
   // Load the pdf
   const doc = await PDFDocument.load(pdfBytes);
 
@@ -157,35 +167,48 @@ export const verifyPac = async (pdfBytes: Uint8Array) => {
   const pac = extractEmbeddedJSON(doc);
   const pdfContainsData = !!pac;
   if (!pdfContainsData) {
-    return { pdfContainsData };
+    return {
+      verification: {
+        pdfContainsData,
+      },
+    };
   }
 
-  //const DRIVE_BASE_ID = "1Zycnk_gjSeRjb9O1sN__gInSIgcOaXcv"
-  //2. Extract the PAC JSON payload (i.e., decode the JWT)
-  const unpacked = jwt.verify(pac, PUBKEY, {
-    algorithms: [ALGORITHM],
-  }) as unknown as UnpackedSadiePAC<Regenscore>;
+  try {
+    //const DRIVE_BASE_ID = "1Zycnk_gjSeRjb9O1sN__gInSIgcOaXcv"
+    //2. Extract the PAC JSON payload (i.e., decode the JWT)
+    const unpacked = jwt.verify(pac, PUBKEY, {
+      algorithms: [ALGORITHM],
+    }) as unknown as UnpackedSadiePAC<Regenscore>;
 
-  //3. Compute the pdf hash and validate against the pdf hash stored in the PAC
-  const originalPdfHash = await getOriginalPdfHash(doc);
-  const pdfUnchanged = originalPdfHash === unpacked.sadie.pdfHash;
+    //3. Compute the pdf hash and validate against the pdf hash stored in the PAC
+    const originalPdfHash = await getOriginalPdfHash(doc);
+    const pdfUnchanged = originalPdfHash === unpacked.sadie.pdfHash;
 
-  //4. confirm the PAC was signed by a trusted escrow provider
-  const escrowTrusted = Object.keys(trustedList).includes(
-    unpacked.sadie.escrowProvider.name,
-  );
+    //4. confirm the PAC was signed by a trusted escrow provider
+    const escrowTrusted = Object.keys(trustedList).includes(
+      unpacked.sadie.escrowProvider.name,
+    );
 
-  return {
-    verification: {
-      escrowProviderTrusted: escrowTrusted,
-      dataOwnerTrusted: escrowTrusted,
-      // TODO: enclave quote
-      codeExecutionTrusted: true,
-      pdfContainsData: true,
-      pdfUnchanged,
-    },
-    pac: unpacked as unknown as PAC<Regenscore>,
-  };
+    return {
+      verification: {
+        escrowProviderTrusted: escrowTrusted,
+        dataOwnerTrusted: escrowTrusted,
+        // TODO: enclave quote
+        codeExecutionTrusted: true,
+        pdfContainsData,
+        pdfUnchanged,
+      },
+      pac: unpacked as unknown as UnpackedSadiePAC<T>,
+    };
+  } catch (error: unknown) {
+    console.warn(error, "Failed to verify PAC");
+    return {
+      verification: {
+        pdfContainsData,
+      },
+    };
+  }
 };
 
 export const generatePAC = (pacData: UnpackedSadiePAC<Regenscore>) => {

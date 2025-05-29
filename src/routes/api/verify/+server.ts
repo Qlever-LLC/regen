@@ -11,7 +11,7 @@ export const POST: RequestHandler = async (ctx) => {
     if (contentType !== "application/pdf") {
       return json(
         { error: "Expected Content-Type: application/pdf" },
-        { status: 400 },
+        { status: 415 },
       );
     }
 
@@ -23,7 +23,7 @@ export const POST: RequestHandler = async (ctx) => {
 
     // Return result as JSON
     return json(verified, {
-      status: valid ? 200 : 400,
+      status: valid ? 200 : 422,
     });
   } catch (error: unknown) {
     console.error(error, "Error handling PDF upload");

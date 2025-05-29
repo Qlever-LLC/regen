@@ -1,14 +1,22 @@
 <script lang="ts">
+  import type { PACVerification } from "$lib/certification";
+  import type { Regenscore } from "$lib/regen";
+  import type { UnpackedSadiePAC } from "$lib/types";
   import LicensePlate from "./LicensePlate.svelte";
+
+  interface Props {
+    verification?: PACVerification;
+    pac?: UnpackedSadiePAC<Regenscore>;
+  }
 
   let {
     verification = $bindable(),
     pac = $bindable(),
-  } = $props();
+  }: Props = $props();
   console.log({ verification, pac });
   const { dataOwnerTrusted, escrowProviderTrusted, codeExecutionTrusted } =
-    verification;
-  const { runAdditionalPACsLink } = pac.sadie.escrowProvider;
+    verification ?? {};
+  const { runAdditionalPACsLink } = pac?.sadie?.escrowProvider ?? {};
 </script>
 
 <div class="card bg-base-100 shadow-xl mt-6">
